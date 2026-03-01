@@ -226,7 +226,7 @@ class TestHarness:
 
         # Initialize context
         Context.plugin_dir = self.plugin_dir
-        Context.plugin_name = "Neutron Dancer"
+        Context.plugin_title = "Neutron Dancer"
 
         # Initialize router (singleton)
 

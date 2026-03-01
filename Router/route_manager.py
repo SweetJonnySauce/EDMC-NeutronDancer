@@ -431,5 +431,3 @@ class Router():
         # Migrate
         if self.shiplist == [] and self.ships != {}:
             self.shiplist = [id for id in self.ships.keys()]
-
-

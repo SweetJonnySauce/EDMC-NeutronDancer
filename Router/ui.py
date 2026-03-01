@@ -21,7 +21,7 @@ from utils.debug import Debug, catch_exceptions
 from utils.misc import frame, labelframe, button, label, radiobutton, combobox, scale, listbox, hfplus, PopupNotice
 from utils.tkrichtext import RichScrolledText
 
-from .constants import NAME, OVERLAY_NAME, SPANSH_SYSTEMS, ASSET_DIR, FONT, BOLD, hdrs, lbls, btns, tts, errs
+from .constants import NAME, SPANSH_SYSTEMS, ASSET_DIR, FONT, BOLD, hdrs, lbls, btns, tts, errs
 from .ship import Ship
 from .route import Route
 from .context import Context
@@ -121,7 +121,7 @@ class UI():
         self.hide_error()
         self._show_busy_gui(False)
         Context.router.cancel_plot = True
-        Context.overlay.show_message('Default', ["title", "", "normal", ""], ttl=1)
+        Context.overlay.clear_frame(which)
         self.sub_fr.grid_remove()
 
         Context.router.neutron_params['range'] = f"{Context.router.ship.get_range(Context.router.cargo):.2f}" if Context.router.ship else "32.0"
@@ -554,7 +554,7 @@ class UI():
             jstr += " " + lbls["jump"] if next_refuel == 1 else lbls["jumps"]
 
         message.extend(["normal", f"{jstr}"])
-        Context.overlay.show_message('Default', message, ttl=60)
+        Context.overlay.display_frame('Default', message, ttl=60)
 
 
     def _create_route_fr(self, parent:tk.Frame) -> tk.Frame:
@@ -685,7 +685,7 @@ class UI():
 
     def _clear_route(self) -> None:
         """ Display a confirmation dialog for clearing the current route """
-        clear:bool = confirmDialog.askyesno(Context.plugin_name, lbls["clear_route_yesno"])
+        clear:bool = confirmDialog.askyesno(Context.plugin_title, lbls["clear_route_yesno"])
         if clear == True:
             self.show_frame(Context.router.last_plot)
             Context.route = Route()
@@ -915,7 +915,7 @@ class UI():
         # I don't love this. Overlay would be better.
         title:str = f"{NAME} – {hdrs['cooldown_title']}"
         message:str = lbls['cooldown_complete']
-        Context.overlay.show_message("Default", lbls['cooldown_complete'], "title")
+        Context.overlay.display_frame("Carrier", lbls['cooldown_complete'], "title")
         PopupNotice(title + "\n" + message, 20000, self.parent)
 
 
@@ -983,11 +983,11 @@ class UI():
 
 
     def save_prefs(self) -> None:
-        config.set(f"{OVERLAY_NAME}_cooldown_popup", self.cooldown_popup)
+        config.set(f"{Context.appname}_cooldown_popup", self.cooldown_popup)
         Context.overlay.save_prefs()
         return
 
 
     def _load_prefs(self) -> None:
         """ Read frame data from the EDMC config. """
-        self.cooldown_popup = config.get(f"{OVERLAY_NAME}_cooldown_popup")
+        self.cooldown_popup = config.get(f"{Context.appname}_cooldown_popup")

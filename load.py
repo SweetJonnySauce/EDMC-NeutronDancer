@@ -4,7 +4,6 @@ from semantic_version import Version #type: ignore
 import tkinter as tk
 
 import myNotebook as nb  #type: ignore
-from config import appname  #type: ignore
 
 from Router.constants import GH_PROJECT, NAME, errs
 from utils.debug import Debug, catch_exceptions
@@ -19,7 +18,7 @@ from Router.overlay import Overlay
 def plugin_start3(plugin_dir: str) -> str:
     Debug(plugin_dir)
 
-    Context.plugin_name = NAME
+    Context.plugin_title = NAME
     Context.plugin_dir = Path(plugin_dir).resolve()
 
     version:Version = Version("0.0.0")
@@ -32,6 +31,7 @@ def plugin_start3(plugin_dir: str) -> str:
     Context.updater.check_for_update(Context.plugin_version)
 
     return NAME
+
 
 def plugin_start(plugin_dir: str) -> None:
     """EDMC calls this function when running in Python 2 mode."""

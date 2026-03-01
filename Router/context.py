@@ -7,6 +7,8 @@ from tkinter import Widget as tkWidget
 from typing import Optional, TYPE_CHECKING
 from semantic_version import Version #type: ignore
 
+from config import appname  #type: ignore
+
 # to avoid circular imports, local imports go here
 if TYPE_CHECKING:
     from utils.updater import Updater
@@ -19,7 +21,9 @@ from .route import Route
 @dataclass
 class Context:
     # Plugin parameters
-    plugin_name:str = os.path.basename(os.path.dirname(__file__))
+    plugin_title:str = 'Unnamed'
+    appname:str = appname
+    
     plugin_dir:Path = None
     plugin_version:Version = None
     plugin_useragent:str = None

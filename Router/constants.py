@@ -2,7 +2,6 @@ from config import config  # type: ignore
 
 # Project information
 NAME="Navl's Neutron Dancer"
-OVERLAY_NAME="NeutronDancer"
 GH_USER="dwomble"
 GH_PROJECT="EDMC-NeutronDancer"
 
@@ -136,7 +135,8 @@ lbls:dict = {
     "carrier_jumping": "Carrier Jump Scheduled",
     "carrier_cooldown": "Carrier Cooldown",
     "next_refuel": "Refuel in {r}",
-    "refuel_now": "Time to refuel"
+    "refuel_now": "Time to refuel",
+    "overlays": "Overlays"
 }
 
 # Tooltips
