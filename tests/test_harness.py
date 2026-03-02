@@ -65,7 +65,7 @@ try:
 except ImportError:
     # If tkinter is not available, create mock modules
     class MockTk:
-        """Mock tkinter module"""
+        """ Mock tkinter module """
         class Widget: pass
         class Frame(Widget): pass
         class Toplevel(Widget): pass
@@ -114,7 +114,7 @@ except ImportError:
         BooleanVar: Callable[[], None] = lambda: None
 
     class MockTtk:
-        """Mock tkinter.ttk module"""
+        """ Mock tkinter.ttk module """
         class Frame(MockTk.Frame): pass
         class Label(MockTk.Label): pass
         class Button(MockTk.Button): pass
@@ -129,7 +129,7 @@ except ImportError:
         class Progressbar(MockTk.Canvas): pass
 
     class MockMessagebox:
-        """Mock tkinter.messagebox module"""
+        """ Mock tkinter.messagebox module """
         @staticmethod
         def showinfo(title, message): pass
         @staticmethod
@@ -168,7 +168,7 @@ except ImportError:
 
 # Mock myNotebook module
 class MockNotebook:
-    """Mock myNotebook (nb) module"""
+    """ Mock myNotebook (nb) module """
     class Frame:
         def __init__(self, parent=None, **kw): pass
     class Label:
@@ -206,7 +206,7 @@ from Router.ship import Ship
 from Router.csv import CSV
 
 class TestHarness:
-    """Main test harness for the Neutron Dancer plugin."""
+    """ Main test harness for the Neutron Dancer plugin. """
     # Prevent pytest from trying to collect this helper class as a test class
     __test__ = False
 
@@ -317,12 +317,7 @@ class TestHarness:
 
 
     def register_journal_handler(self, handler: Callable) -> None:
-        """
-        Register a journal event handler (simulates journal_entry callback).
-
-        Args:
-            handler: Callable that accepts (cmdr, is_beta, system, station, entry, state)
-        """
+        """ Register a journal event handler (simulates journal_entry callback). """
         self.journal_handlers.append(handler)
 
 
@@ -358,7 +353,7 @@ class TestHarness:
         self.router.ships[self.router.ship_id] = self.router.ship
 
     def _load_events(self) -> Dict[str, list]:
-        """Load journal events from events.json file."""
+        """ Load journal events from events.json file. """
         events:Dict[str, list] = {}
 
         EVENTS_FILE = Path(self.plugin_dir, "config", "journal_events.json")
@@ -375,7 +370,7 @@ class TestHarness:
         return events
 
     def _load_loadouts(self) -> Dict[str, dict]:
-        """Load ship loadouts from loadouts.json file."""
+        """ Load ship loadouts from loadouts.json file. """
         loadouts:Dict[str, dict] = {}
 
         LOADOUTS_FILE = Path(self.plugin_dir, "config", "loadouts.json")
