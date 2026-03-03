@@ -19,10 +19,11 @@ plugin_dir:Path = Path(__file__).parent
 sys.path.insert(0, str(plugin_dir))
 
 # Config is already mocked by conftest.py
-from test_harness import TestHarness
+from harness import TestHarness
 from load import journal_entry
 from Router.context import Context
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 @pytest.fixture
 def harness() -> Generator:
@@ -40,7 +41,7 @@ class TestStartup:
     def test_harness_initialization(self) -> None:
         """Test basic harness initialization."""
         harness = TestHarness()
-        assert harness.commander == "NavlGazr"
+        assert harness.commander == "TestCommander"
         assert harness.system == "Sol"
         assert harness.router is not None
 
@@ -140,12 +141,13 @@ class TestEventSequences:
 
     def test_full_route_scenario(self, harness: TestHarness):
         """Test a complete route scenario with jumps and cargo."""
+        harness.system = 'Apurui'
 
         # Import a route
         filename:str = str(Path(__file__).parent / "config" / "full-route-scenario.csv")
         res:bool = harness.router.import_route(filename)
         assert res == True
-
+        
         # Follow the route
         for event in harness.events.get('full_route_scenario', []):
             harness.fire_event(event)
@@ -154,6 +156,8 @@ class TestEventSequences:
                     assert harness.router.ship_id == str(event.get('ShipID'))
                 case 'Location' | 'FSDJump':
                     assert harness.router.system == event.get('StarSystem', '')
+                    assert harness.overlay.msgs != {}
+                    #assert harness.router.system in json.dumps(harness.overlay.msgs)
 
         # Final state check
         assert harness.context.route.jumps_remaining() == 0

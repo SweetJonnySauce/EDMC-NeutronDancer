@@ -13,14 +13,18 @@ from typing import Optional, Callable, Dict
 from datetime import datetime, timezone
 from time import sleep
 import logging
+import types as _types
 
 # Configure logging to output INFO level messages and higher to the console
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-
 # Add plugin directory to path for imports (go up one level from tests/)
 plugin_dir:Path = Path(__file__).parent.parent
 sys.path.insert(0, str(plugin_dir))
+
+# We keep a copy of edmc_data here.
+this_dir = Path(__file__).parent
+sys.path.insert(0, str(this_dir))
 
 # Mock EDMC's config module (only if not already mocked)
 if 'config' not in sys.modules:
@@ -41,18 +45,15 @@ if 'config' not in sys.modules:
         def set(self, key, value):
             self.data[key] = value
 
-    import types as _types
     _cfg = _types.ModuleType('config')
     _cfg.appname = 'EDMC' # type:ignore
     _cfg.config = MockConfig() # type:ignore
     _cfg.shutting_down = False # type:ignore
-    sys.modules['config'] = _cfg
+    sys.modules['config.config'] = _cfg
 
 # Minimal EDMC `theme` module emulator for direct runs (examples.py / __main__)
-import types
-from types import SimpleNamespace
-theme_mod = types.ModuleType("theme")
-theme_mod.theme = SimpleNamespace() # type:ignore
+theme_mod = _types.ModuleType("theme")
+theme_mod.theme = _types.SimpleNamespace() # type:ignore
 theme_mod.theme.name = "default"
 theme_mod.theme.dark = False
 sys.modules['theme'] = theme_mod
@@ -141,8 +142,6 @@ except ImportError:
         @staticmethod
         def askokcancel(title, message): return False
 
-    import types as _types
-
     _tk_mod = _types.ModuleType('tkinter')
     # attach classes and constants from MockTk to the module
     for name, val in MockTk.__dict__.items():
@@ -189,8 +188,7 @@ class MockNotebook:
         def __init__(self, parent=None, **kw): pass
     class Notebook:
         def __init__(self, parent=None, **kw): pass
-
-import types as _types
+    
 _nb_mod = _types.ModuleType('myNotebook')
 # attach classes from MockNotebook to module
 for name, val in MockNotebook.__dict__.items():
@@ -198,12 +196,58 @@ for name, val in MockNotebook.__dict__.items():
         setattr(_nb_mod, name, val)
 sys.modules['myNotebook'] = _nb_mod
 
+class MockEDMCOverlay:
+    def __init__(self): pass
+
+class Mockedmcoverlay:
+    def __init__(self): pass
+
+    class Overlay():
+        def __init__(self): pass
+        @staticmethod
+        def send_message(**kw): pass
+        
+_edmcoverlay = _types.ModuleType('EDMCOverlay')
+for name, val in MockEDMCOverlay.__dict__.items():
+    if not name.startswith('__'):
+        setattr(_edmcoverlay, name, val)
+sys.modules['EDMCOverlay'] = _edmcoverlay
+
+_overlay = _types.ModuleType('edmcoverlay')
+for name, val in Mockedmcoverlay.__dict__.items():
+    if not name.startswith('__'):
+        setattr(_overlay, name, val)
+sys.modules['EDMCOverlay.edmcoverlay'] = _overlay
+
+# Mock up the modern overlay and its plugin 
+class MockOverlay_Plugin:
+    def __init__(self, **kw): pass
+class Mockoverlay_api:
+    def __init__(self, **kw): pass
+    @staticmethod
+    def define_plugin_group(**kw): pass
+    
+_overlay_plugin = _types.ModuleType('overlay_plugin')
+for name, val in MockOverlay_Plugin.__dict__.items():
+    if not name.startswith('__'):
+        setattr(_overlay_plugin, name, val)
+sys.modules['overlay_plugin'] = _overlay_plugin
+
+_overlay_api = _types.ModuleType('overlay_api')
+for name, val in Mockoverlay_api.__dict__.items():
+    if not name.startswith('__'):
+        setattr(_overlay_api, name, val)
+sys.modules['overlay_plugin.overlay_api'] = _overlay_api
+
 # Now we can import Router modules
+from config import config # type: ignore
 from Router.context import Context
 from Router.route_manager import Router
 from Router.route import Route
 from Router.ship import Ship
 from Router.csv import CSV
+from Router.constants import NAME, TITLE
+from Router.overlay import Overlay
 
 class TestHarness:
     """ Main test harness for the Neutron Dancer plugin. """
@@ -226,7 +270,8 @@ class TestHarness:
 
         # Initialize context
         Context.plugin_dir = self.plugin_dir
-        Context.plugin_title = "Neutron Dancer"
+        Context.plugin_title = TITLE
+        Context.plugin_name = NAME
 
         # Initialize router (singleton)
 
@@ -235,7 +280,6 @@ class TestHarness:
 
         self.csv = CSV()
         Context.csv = self.csv
-        self.context = Context
 
         # Ensure minimal module data present for ship calculations during tests
         try:
@@ -264,16 +308,15 @@ class TestHarness:
         except Exception:
             pass
 
-        # Event handlers registered by plugins
-        self.journal_handlers: list[Callable] = []
-        self.state_change_handlers: list[Callable] = []
+        self.overlay = Overlay()
+        Context.overlay = self.overlay
 
         # Ensure a minimal UI stub exists for headless/test environments
         try:
             if getattr(Context, 'ui', None) is None:
                 class _StubUI:
                     def __init__(self):
-                        self.frame = SimpleNamespace()
+                        self.frame = _types.SimpleNamespace()
                         # simple after() implementation used by Router
                         def after(ms, cb):
                             # don't schedule background calls during tests
@@ -302,19 +345,36 @@ class TestHarness:
                 Context.ui = _StubUI()  # type: ignore
         except Exception:
             pass
+        
+        self.context = Context
+
+        # Event handlers registered by plugins
+        self.journal_handlers: list[Callable] = []
+        self.state_change_handlers: list[Callable] = []
+        self.config = config
 
     def setup(self, config_file:str = "test_config.json") -> None:
-        """ Setup the harness with a given config file. """
+        """ Setup the harness with a specific config file. """
 
         # Load config
-        config_path:Path = self.plugin_dir / config_file
+        config_path:Path = self.plugin_dir / "data" / config_file
         if config_path.exists():
             try:
                 with open(config_path, 'r') as f:
                     self.router._from_dict(json.load(f))
             except Exception as e:
-                print(f"Warning: Could not load config file {config_path}: {e}")
+                print(f"Warning: Could not load setup file {config_path}: {e}")
 
+
+    def set_edmc_config(self, config_file:str = "emdc_config.json") -> None:
+        # Load config
+        config_path:Path = self.plugin_dir / "data" / config_file
+        if config_path.exists():
+            try:
+                with open(config_path, 'r') as f:
+                    self.config.set(json.load(f))
+            except Exception as e:
+                print(f"Warning: Could not load edmc config file {config_path}: {e}")
 
     def register_journal_handler(self, handler: Callable) -> None:
         """ Register a journal event handler (simulates journal_entry callback). """

@@ -9,8 +9,9 @@ from threading import Thread
 
 from config import config # type: ignore
 from utils.debug import Debug, catch_exceptions
+from utils.misc import hfplus
 
-from .constants import ovr, errs, HEADERS, HEADER_MAP, DATA_DIR, SPANSH_ROUTE, SPANSH_GALAXY_ROUTE, SPANSH_RESULTS
+from .constants import ovr, errs, lbls, HEADERS, HEADER_MAP, DATA_DIR, SPANSH_ROUTE, SPANSH_GALAXY_ROUTE, SPANSH_RESULTS
 from .context import Context
 from .ship import Ship
 from .route import Route
@@ -124,6 +125,34 @@ class Router():
         if Context.route.update_route(0, entry.get('StarSystem', system)) > 0:
             Debug.logger.debug(f"Updating route")
             Context.ui.update_waypoint()
+            self.update_jump_overlay()
+    
+
+    def update_jump_overlay(self) -> None:
+        """ Update overlay after a waypoint """
+        wp:str = Context.route.next_stop()
+        if Context.route.jumps_to_wp() != 0:
+            wp += f" ({Context.route.jumps_to_wp()} {lbls['jumps'] if Context.route.jumps_to_wp() != 1 else lbls['jump']})"
+
+        message:list = [{'size': 'large', 'text' : "Next: " + str(wp)}]
+        jumps:tuple = tuple([Context.route.total_jumps() - Context.route.jumps_remaining(), 'int', '0'])
+        tjumps:tuple = tuple([Context.route.total_jumps(), 'int'])
+        txt:str = lbls['jumps'] if Context.route.jc != None else lbls['waypoints']
+        jstr:str = f"{txt} {hfplus(jumps)}/{hfplus(tjumps)}"
+        if Context.route.total_dist() > 0:
+            jstr += f", {lbls['distance']} "
+            dist:tuple = tuple([Context.route.total_dist() - Context.route.dist_remaining(), 'float', '0', ''])
+            jstr += f"{hfplus(dist)}/{hfplus(Context.route.total_dist())} ly"
+
+        next_refuel:int|None = Context.route.next_refuel()
+        if next_refuel is not None and next_refuel == 0:
+            jstr += ", ⛽ " + lbls["refuel_now"]
+        if next_refuel is not None and next_refuel > 0:
+            jstr += ", " + lbls["refuel"].format(r=next_refuel)
+            jstr += " " + lbls["jump"] if next_refuel == 1 else lbls["jumps"]
+
+        message.append({'size': "normal", 'text': f"{jstr}"})        
+        Context.overlay.display_frame('Default', message, ttl=120)
 
 
     def carrier_event(self, entry:dict) -> None:

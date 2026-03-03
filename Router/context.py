@@ -21,7 +21,7 @@ from .route import Route
 @dataclass
 class Context:
     # Plugin parameters
-    plugin_title:str = 'Unnamed'
+    plugin_title:str = ''
     plugin_name:str = ''
 
     plugin_dir:Path = None

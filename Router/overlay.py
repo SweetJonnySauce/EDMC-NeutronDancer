@@ -17,6 +17,7 @@ try:
 except ImportError:
     edmcoverlay = None
 
+
 from config import config # type: ignore
 #from edmc_data import GuiFocusNoFocus, FlagsInMainShip, GuiFocusGalaxyMap # type: ignore
 import edmc_data # type: ignore
@@ -85,7 +86,7 @@ class Overlay():
         try:
             return edmcoverlay.Overlay()
         except Exception as e:
-            Debug.logger.warning(f"EDMCOverlay is not running")
+            Debug.logger.warning(f"EDMCOverlay is not running {e}")
             return
 
 
@@ -110,7 +111,8 @@ class Overlay():
         """ Clear a message frame """
         overlay = self._get_overlay()
         if not overlay or frame not in self.msgs: return
-
+        
+        self.ovfrs[frame].visible = False
         for m in self.msgs[frame].values():
             tmp:dict = deepcopy(m)
             tmp['ttl'] = 1
@@ -121,7 +123,7 @@ class Overlay():
 
     @catch_exceptions
     def create_frame(self, group:str, ovf:OvFrame) -> None:
-        """ Initialize a frame """
+        """ Initialize a frame """        
         if not self._get_overlay(): return
 
         self.stoppers[group] = Event()
@@ -140,6 +142,7 @@ class Overlay():
             kw['background_color'] = ovf.background
             kw['background_border_width'] = ovf.border_width
 
+        define_plugin_group(**kw)
 
     @catch_exceptions
     def display_frame(self, frame:str = "", content:str|list[dict] = "", size:str = "normal", ttl:int = 120) -> None:
@@ -150,12 +153,11 @@ class Overlay():
         if not overlay or frame not in self.ovfrs: return
         fr:OvFrame = self.ovfrs[frame]
 
-        Debug.logger.debug(f"State: {fr.enabled}")
         if fr.enabled == False: return
 
         if isinstance(content, str): content = [{'size': size, 'text': content}]
 
-        Debug.logger.debug(f"Redrawing")
+        self.ovfrs[frame].visible = True
         self.msgs[frame] = {}
         y:int = fr.y
         for i, c in enumerate(content):
@@ -350,6 +352,8 @@ class Overlay():
         Debug.logger.info(f"Saved frames to EDMC config")
         return True
 
+    def _from_dict(self, name, data:dict) -> None:
+        self.ovfrs[name] = OvFrame(**data)
 
     def _load_prefs(self) -> None:
         """ Read frame data from the EDMC config. """

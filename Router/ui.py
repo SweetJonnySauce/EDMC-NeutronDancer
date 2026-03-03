@@ -120,8 +120,8 @@ class UI():
         """ Display the chosen frame, recreating it if necessary """
         self.hide_error()
         self._show_busy_gui(False)
-        Context.router.cancel_plot = True
-        Context.overlay.hide_frame(which)
+        Context.router.cancel_plot = True  
+        Context.overlay.hide_frame('Default')
         self.sub_fr.grid_remove()
 
         Context.router.neutron_params['range'] = f"{Context.router.ship.get_range(Context.router.cargo):.2f}" if Context.router.ship else "32.0"
@@ -501,10 +501,10 @@ class UI():
 
 
     @catch_exceptions
-    def update_waypoint(self) -> None:
+    def update_waypoint(self) -> None:        
         if Context.route.route == [] or not hasattr(self, 'waypoint_btn'):
             return
-
+        
         self.waypoint_prev_btn.config(state=tk.DISABLED if Context.route.offset == 0 else tk.NORMAL)
         self.waypoint_prev_tt:Tooltip = Tooltip(self.waypoint_prev_btn, Context.route.get_waypoint(-1))
         self.waypoint_next_btn.config(state=tk.DISABLED if Context.route.offset >= len(Context.route.route) -1 else tk.NORMAL)
@@ -535,26 +535,6 @@ class UI():
             image=self.fuel_img
             wp = ' ' + wp + ' '
         self.waypoint_btn.configure(text=wp, image=image, compound=tk.RIGHT)
-
-        message:list = [{'size': 'large', 'text' : "Next: " + str(wp)}]
-        jumps:tuple = tuple([Context.route.total_jumps() - Context.route.jumps_remaining(), 'int', '0'])
-        tjumps:tuple = tuple([Context.route.total_jumps(), 'int'])
-        txt:str = lbls['jumps'] if Context.route.jc != None else lbls['waypoints']
-        jstr:str = f"{txt} {hfplus(jumps)}/{hfplus(tjumps)}"
-        if Context.route.total_dist() > 0:
-            jstr += f", {lbls['distance']} "
-            dist:tuple = tuple([Context.route.total_dist() - Context.route.dist_remaining(), 'float', '0', ''])
-            jstr += f"{hfplus(dist)}/{hfplus(Context.route.total_dist())} ly"
-
-        next_refuel:int|None = Context.route.next_refuel()
-        if next_refuel is not None and next_refuel == 0:
-            jstr += ", ⛽ " + lbls["refuel_now"]
-        if next_refuel is not None and next_refuel > 0:
-            jstr += ", " + lbls["refuel"].format(r=next_refuel)
-            jstr += " " + lbls["jump"] if next_refuel == 1 else lbls["jumps"]
-
-        message.append({'size': "normal", 'text': f"{jstr}"})
-        Context.overlay.display_frame('Default', message, ttl=120)
 
 
     def _create_route_fr(self, parent:tk.Frame) -> tk.Frame:
@@ -914,8 +894,7 @@ class UI():
 
         # I don't love this. Overlay would be better.
         title:str = f"{NAME} – {hdrs['cooldown_title']}"
-        message:str = lbls['cooldown_complete']
-        Context.overlay.display_frame("Carrier", lbls['cooldown_complete'], "title", 60)
+        message:str = lbls['cooldown_complete']        
         PopupNotice(title + "\n" + message, 20000, self.parent)
 
 

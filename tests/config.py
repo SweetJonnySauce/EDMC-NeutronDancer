@@ -4,6 +4,9 @@ Pytest configuration for Neutron Dancer test harness.
 
 import sys
 from pathlib import Path
+import logging
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Add plugin directory to path for all tests
 plugin_dir = Path(__file__).parent.parent
