@@ -1,16 +1,29 @@
 from typing import Callable
 
+class tk:
+    def call(self, *args, **kw): pass
 class MockTk:
     """ Mock tkinter module """
-    class Widget: pass
-    class Frame(Widget):
-        def func(*kw): pass
+    class Widget:
+        tk = tk()
+        _last_child_ids = {}
+        _w = ''
+        children = {}
+        def __init__(self, *args, **kw): pass
+        def winfo_toplevel(self, **kw): pass
+    class Frame(Widget): 
+        def __init__(self, *args, **kw): pass
+        def after(*args, **kw): pass
+        def grid(*args, **kw): pass
     class Toplevel(Widget): pass
     class Label(Widget): pass
     class Button(Widget): pass
     class Radiobutton(Widget): pass
     class Checkbutton(Widget): pass
     class Entry(Widget): pass
+    class Image(Widget): 
+        def __init__(self, *args, **kw): pass
+        def _get_default_root(self, *args, **kw): pass
     class Text(Widget): pass
     class Canvas(Widget): pass
     class Listbox(Widget): pass
@@ -18,6 +31,8 @@ class MockTk:
     class Spinbox(Widget): pass
     class LabelFrame(Widget): pass
     class Message(Widget): pass
+    class PhotoImage(Image): 
+        def __init__(self, *args, **kw): pass         
     class Scrollbar(Widget): pass
     class OptionMenu(Widget): pass
     class Menubutton(Widget): pass
@@ -88,3 +103,27 @@ class MockMessagebox:
     def askyesno(title, message): return False
     @staticmethod
     def askokcancel(title, message): return False
+
+# Mock myNotebook module
+class MockNotebook:
+    """ Mock myNotebook (nb) module """
+    class Frame:
+        def __init__(self, parent=None, **kw): pass
+    class Label:
+        def __init__(self, parent=None, **kw): pass
+    class Button:
+        def __init__(self, parent=None, **kw): pass
+    class Entry:
+        def __init__(self, parent=None, **kw): pass
+    class Combobox:
+        def __init__(self, parent=None, **kw): pass
+    class Checkbutton:
+        def __init__(self, parent=None, **kw): pass
+    class Radiobutton:
+        def __init__(self, parent=None, **kw): pass
+    class Scrollbar:
+        def __init__(self, parent=None, **kw): pass
+    class LabelFrame:
+        def __init__(self, parent=None, **kw): pass
+    class Notebook:
+        def __init__(self, parent=None, **kw): pass

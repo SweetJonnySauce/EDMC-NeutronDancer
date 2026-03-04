@@ -13,6 +13,7 @@ from unittest.mock import Mock, patch, MagicMock
 import json
 import time
 import logging
+import tkinter as tk
 
 # Setup path for imports
 plugin_dir:Path = Path(__file__).parent
@@ -234,12 +235,10 @@ class TestOverlay:
 
         monkeypatch.setattr(type(harness.context.overlay), '_countdown', fake_countdown, raising=False)
         harness.play_sequence('cancel_carrier_jump')
-
         # The thread may run quickly; wait briefly for it to start
         import time
         time.sleep(0.05)
-        assert called['flag'] is True
-
+        assert called['flag'] is True        
 
 class TestPlotting:
     """Test plotting functionality (neutron/galaxy routes)."""

@@ -14,7 +14,9 @@ from datetime import datetime, timezone
 from time import sleep
 import logging
 import types as _types
-import functools
+import tkinter as tk
+from tkinter import ttk
+import tkinter.messagebox
 
 # Configure logging to output INFO level messages and higher to the console
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -27,6 +29,10 @@ sys.path.insert(0, str(plugin_dir))
 this_dir = Path(__file__).parent
 sys.path.insert(0, str(this_dir))
 
+print(f"{sys.path}")
+from mock_tk import MockTk
+tk = MockTk
+tk.PhotoImage = MockTk.PhotoImage
 # Mock EDMC's config module (only if not already mocked)
 if 'config' not in sys.modules:
     class MockConfig:
@@ -46,11 +52,14 @@ if 'config' not in sys.modules:
         def set(self, key, value):
             self.data[key] = value
 
+        def get_int(self, key):
+            return int(self.data.get(key, 0)) #type: ignore
+
     _cfg = _types.ModuleType('config')
     _cfg.appname = 'EDMC' # type:ignore
     _cfg.config = MockConfig() # type:ignore
     _cfg.shutting_down = False # type:ignore
-    sys.modules['config.config'] = _cfg
+    sys.modules['config'] = _cfg
 
 # Minimal EDMC `theme` module emulator for direct runs (examples.py / __main__)
 theme_mod = _types.ModuleType("theme")
@@ -59,169 +68,6 @@ theme_mod.theme.name = "default"
 theme_mod.theme.dark = False
 sys.modules['theme'] = theme_mod
 
-
-
-# Mock tkinter modules for testing 
-class MockTk:
-    """ Mock tkinter module """
-    class Widget: pass
-    class Frame(Widget): 
-        def after(*kw): pass
-    class Toplevel(Widget): pass
-    class Label(Widget): pass
-    class Button(Widget): pass
-    class Radiobutton(Widget): pass
-    class Checkbutton(Widget): pass
-    class Entry(Widget): pass
-    class Text(Widget): pass
-    class Canvas(Widget): pass
-    class Listbox(Widget): pass
-    class Scale(Widget): pass
-    class Spinbox(Widget): pass
-    class LabelFrame(Widget): pass
-    class Message(Widget): pass
-    class Scrollbar(Widget): pass
-    class OptionMenu(Widget): pass
-    class Menubutton(Widget): pass
-    class Menu(Widget): pass
-    
-    # Constants
-    NSEW = "nsew"
-    NW = "nw"
-    N = "n"
-    NE = "ne"
-    W = "w"
-    CENTER = "center"
-    E = "e"
-    SW = "sw"
-    S = "s"
-    SE = "se"
-    LEFT = "left"
-    RIGHT = "right"
-    TOP = "top"
-    BOTTOM = "bottom"
-    BOTH = "both"
-    NONE = "none"
-    X = "x"
-    Y = "y"
-    END = "end"
-    DISABLED = "disabled"
-    NORMAL = "normal"
-
-    StringVar: Callable[[], None] = lambda: None
-    IntVar: Callable[[], None] = lambda: None
-    BooleanVar: Callable[[], None] = lambda: None
-
-    def _get_default_root(*kw): pass
-class MockFont:
-    @staticmethod
-    def families(): pass
-
-class MockFileDialog:
-    def __init__(self, master, title=None, **kw): pass
-    @staticmethod
-    def families(): pass
-
-class MockTtk:
-    """ Mock tkinter.ttk module """
-    class Frame(MockTk.Frame): pass
-    class Label(MockTk.Label): pass
-    class Button(MockTk.Button): pass
-    class Entry(MockTk.Entry): pass
-    class Combobox(MockTk.Entry): pass
-    class Checkbutton(MockTk.Checkbutton): pass
-    class Radiobutton(MockTk.Radiobutton): pass
-    class Scrollbar(MockTk.Scrollbar): pass
-    class LabelFrame(MockTk.LabelFrame): pass
-    class Notebook(MockTk.Frame): pass
-    class Scale(MockTk.Scale): pass
-    class Progressbar(MockTk.Canvas): pass
-    class Treeview(MockTk.Widget): pass
-
-class MockMessagebox:
-    """ Mock tkinter.messagebox module """
-    @staticmethod
-    def showinfo(title, message): pass
-    @staticmethod
-    def showerror(title, message): pass
-    @staticmethod
-    def showwarning(title, message): pass
-    @staticmethod
-    def askyesno(title, message): return False
-    @staticmethod
-    def askokcancel(title, message): return False
-
-# If tkinter is not available, use mock modules
-try:
-    import tkinter as tk
-    from tkinter import ttk
-    import tkinter.messagebox
-except ImportError:
-    # NOTE: This isn't sufficient as nowhere near everything is implemented.
-    _tk_mod = _types.ModuleType('tkinter')
-    # attach classes and constants from MockTk to the module
-    for name, val in MockTk.__dict__.items():
-        if not name.startswith('__'):
-            setattr(_tk_mod, name, val)
-
-    _ttk_mod = _types.ModuleType('tkinter.ttk')
-    for name, val in MockTtk.__dict__.items():
-        if not name.startswith('__'):
-            setattr(_ttk_mod, name, val)
-
-    _fnt_mod = _types.ModuleType('tkinter.font')
-    for name, val in MockFont.__dict__.items():
-        if not name.startswith('__'):
-            setattr(_fnt_mod, name, val)
-
-    _file_mod = _types.ModuleType('tkinter.filedialog')
-    for name, val in MockFileDialog.__dict__.items():
-        if not name.startswith('__'):
-            setattr(_file_mod, name, val)
-
-    _msg_mod = _types.ModuleType('tkinter.messagebox')
-    # copy static methods from MockMessagebox to module-level callables
-    for name, val in MockMessagebox.__dict__.items():
-        if not name.startswith('__'):
-            setattr(_msg_mod, name, val)
-
-    sys.modules['tkinter'] = _tk_mod
-    sys.modules['tkinter.ttk'] = _ttk_mod
-    sys.modules['tkinter.filedialog'] = _file_mod
-    sys.modules['tkinter.font'] = _fnt_mod
-    sys.modules['tkinter.messagebox'] = _msg_mod
-
-
-# Mock myNotebook module
-class MockNotebook:
-    """ Mock myNotebook (nb) module """
-    class Frame:
-        def __init__(self, parent=None, **kw): pass
-    class Label:
-        def __init__(self, parent=None, **kw): pass
-    class Button:
-        def __init__(self, parent=None, **kw): pass
-    class Entry:
-        def __init__(self, parent=None, **kw): pass
-    class Combobox:
-        def __init__(self, parent=None, **kw): pass
-    class Checkbutton:
-        def __init__(self, parent=None, **kw): pass
-    class Radiobutton:
-        def __init__(self, parent=None, **kw): pass
-    class Scrollbar:
-        def __init__(self, parent=None, **kw): pass
-    class LabelFrame:
-        def __init__(self, parent=None, **kw): pass
-    class Notebook:
-        def __init__(self, parent=None, **kw): pass
-    
-_nb_mod = _types.ModuleType('myNotebook')
-# attach classes from MockNotebook to module
-for name, val in MockNotebook.__dict__.items():
-    if not name.startswith('__'):
-        setattr(_nb_mod, name, val)
-sys.modules['myNotebook'] = _nb_mod
 
 class MockEDMCOverlay:
     def __init__(self): pass
@@ -339,9 +185,10 @@ class TestHarness:
         self.overlay = Overlay()
         Context.overlay = self.overlay
 
-    
+        # This got stuck with annoying PhotoImage
+        #parent:tk.Widget = MockTk.Widget() # type: ignore
         self.ui = UI()
-        self.ui.frame = MockTk.Frame # type:ignore
+        self.ui.frame = MockTk.Frame #type: ignore
         Context.ui = self.ui
         
         self.context = Context
