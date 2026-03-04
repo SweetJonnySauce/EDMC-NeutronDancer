@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from time import sleep
 import logging
 import types as _types
+import functools
 
 # Configure logging to output INFO level messages and higher to the console
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -58,90 +59,105 @@ theme_mod.theme.name = "default"
 theme_mod.theme.dark = False
 sys.modules['theme'] = theme_mod
 
-# Mock tkinter modules for testing
+
+
+# Mock tkinter modules for testing 
+class MockTk:
+    """ Mock tkinter module """
+    class Widget: pass
+    class Frame(Widget): 
+        def after(*kw): pass
+    class Toplevel(Widget): pass
+    class Label(Widget): pass
+    class Button(Widget): pass
+    class Radiobutton(Widget): pass
+    class Checkbutton(Widget): pass
+    class Entry(Widget): pass
+    class Text(Widget): pass
+    class Canvas(Widget): pass
+    class Listbox(Widget): pass
+    class Scale(Widget): pass
+    class Spinbox(Widget): pass
+    class LabelFrame(Widget): pass
+    class Message(Widget): pass
+    class Scrollbar(Widget): pass
+    class OptionMenu(Widget): pass
+    class Menubutton(Widget): pass
+    class Menu(Widget): pass
+    
+    # Constants
+    NSEW = "nsew"
+    NW = "nw"
+    N = "n"
+    NE = "ne"
+    W = "w"
+    CENTER = "center"
+    E = "e"
+    SW = "sw"
+    S = "s"
+    SE = "se"
+    LEFT = "left"
+    RIGHT = "right"
+    TOP = "top"
+    BOTTOM = "bottom"
+    BOTH = "both"
+    NONE = "none"
+    X = "x"
+    Y = "y"
+    END = "end"
+    DISABLED = "disabled"
+    NORMAL = "normal"
+
+    StringVar: Callable[[], None] = lambda: None
+    IntVar: Callable[[], None] = lambda: None
+    BooleanVar: Callable[[], None] = lambda: None
+
+    def _get_default_root(*kw): pass
+class MockFont:
+    @staticmethod
+    def families(): pass
+
+class MockFileDialog:
+    def __init__(self, master, title=None, **kw): pass
+    @staticmethod
+    def families(): pass
+
+class MockTtk:
+    """ Mock tkinter.ttk module """
+    class Frame(MockTk.Frame): pass
+    class Label(MockTk.Label): pass
+    class Button(MockTk.Button): pass
+    class Entry(MockTk.Entry): pass
+    class Combobox(MockTk.Entry): pass
+    class Checkbutton(MockTk.Checkbutton): pass
+    class Radiobutton(MockTk.Radiobutton): pass
+    class Scrollbar(MockTk.Scrollbar): pass
+    class LabelFrame(MockTk.LabelFrame): pass
+    class Notebook(MockTk.Frame): pass
+    class Scale(MockTk.Scale): pass
+    class Progressbar(MockTk.Canvas): pass
+    class Treeview(MockTk.Widget): pass
+
+class MockMessagebox:
+    """ Mock tkinter.messagebox module """
+    @staticmethod
+    def showinfo(title, message): pass
+    @staticmethod
+    def showerror(title, message): pass
+    @staticmethod
+    def showwarning(title, message): pass
+    @staticmethod
+    def askyesno(title, message): return False
+    @staticmethod
+    def askokcancel(title, message): return False
+
+# If tkinter is not available, use mock modules
 try:
     import tkinter as tk
     from tkinter import ttk
     import tkinter.messagebox
 except ImportError:
-    # If tkinter is not available, create mock modules
-    class MockTk:
-        """ Mock tkinter module """
-        class Widget: pass
-        class Frame(Widget): pass
-        class Toplevel(Widget): pass
-        class Label(Widget): pass
-        class Button(Widget): pass
-        class Radiobutton(Widget): pass
-        class Checkbutton(Widget): pass
-        class Entry(Widget): pass
-        class Text(Widget): pass
-        class Canvas(Widget): pass
-        class Listbox(Widget): pass
-        class Scale(Widget): pass
-        class Spinbox(Widget): pass
-        class LabelFrame(Widget): pass
-        class Message(Widget): pass
-        class Scrollbar(Widget): pass
-        class OptionMenu(Widget): pass
-        class Menubutton(Widget): pass
-        class Menu(Widget): pass
-
-        # Constants
-        NSEW = "nsew"
-        NW = "nw"
-        N = "n"
-        NE = "ne"
-        W = "w"
-        CENTER = "center"
-        E = "e"
-        SW = "sw"
-        S = "s"
-        SE = "se"
-        LEFT = "left"
-        RIGHT = "right"
-        TOP = "top"
-        BOTTOM = "bottom"
-        BOTH = "both"
-        NONE = "none"
-        X = "x"
-        Y = "y"
-        END = "end"
-        DISABLED = "disabled"
-        NORMAL = "normal"
-
-        StringVar: Callable[[], None] = lambda: None
-        IntVar: Callable[[], None] = lambda: None
-        BooleanVar: Callable[[], None] = lambda: None
-
-    class MockTtk:
-        """ Mock tkinter.ttk module """
-        class Frame(MockTk.Frame): pass
-        class Label(MockTk.Label): pass
-        class Button(MockTk.Button): pass
-        class Entry(MockTk.Entry): pass
-        class Combobox(MockTk.Entry): pass
-        class Checkbutton(MockTk.Checkbutton): pass
-        class Radiobutton(MockTk.Radiobutton): pass
-        class Scrollbar(MockTk.Scrollbar): pass
-        class LabelFrame(MockTk.LabelFrame): pass
-        class Notebook(MockTk.Frame): pass
-        class Scale(MockTk.Scale): pass
-        class Progressbar(MockTk.Canvas): pass
-
-    class MockMessagebox:
-        """ Mock tkinter.messagebox module """
-        @staticmethod
-        def showinfo(title, message): pass
-        @staticmethod
-        def showerror(title, message): pass
-        @staticmethod
-        def showwarning(title, message): pass
-        @staticmethod
-        def askyesno(title, message): return False
-        @staticmethod
-        def askokcancel(title, message): return False
-
+    # NOTE: This isn't sufficient as nowhere near everything is implemented.
     _tk_mod = _types.ModuleType('tkinter')
     # attach classes and constants from MockTk to the module
     for name, val in MockTk.__dict__.items():
@@ -153,17 +169,28 @@ except ImportError:
         if not name.startswith('__'):
             setattr(_ttk_mod, name, val)
 
+    _fnt_mod = _types.ModuleType('tkinter.font')
+    for name, val in MockFont.__dict__.items():
+        if not name.startswith('__'):
+            setattr(_fnt_mod, name, val)
+
+    _file_mod = _types.ModuleType('tkinter.filedialog')
+    for name, val in MockFileDialog.__dict__.items():
+        if not name.startswith('__'):
+            setattr(_file_mod, name, val)
+
     _msg_mod = _types.ModuleType('tkinter.messagebox')
     # copy static methods from MockMessagebox to module-level callables
-    _msg_mod.showinfo = MockMessagebox.showinfo # type:ignore
-    _msg_mod.showerror = MockMessagebox.showerror # type:ignore
-    _msg_mod.showwarning = MockMessagebox.showwarning # type:ignore
-    _msg_mod.askyesno = MockMessagebox.askyesno # type:ignore
-    _msg_mod.askokcancel = MockMessagebox.askokcancel # type:ignore
+    for name, val in MockMessagebox.__dict__.items():
+        if not name.startswith('__'):
+            setattr(_msg_mod, name, val)
 
     sys.modules['tkinter'] = _tk_mod
     sys.modules['tkinter.ttk'] = _ttk_mod
+    sys.modules['tkinter.filedialog'] = _file_mod
+    sys.modules['tkinter.font'] = _fnt_mod
     sys.modules['tkinter.messagebox'] = _msg_mod
+
 
 # Mock myNotebook module
 class MockNotebook:
@@ -312,7 +339,9 @@ class TestHarness:
         self.overlay = Overlay()
         Context.overlay = self.overlay
 
+    
         self.ui = UI()
+        self.ui.frame = MockTk.Frame # type:ignore
         Context.ui = self.ui
         
         self.context = Context

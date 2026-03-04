@@ -207,7 +207,7 @@ class TestOverlay:
     """Test overlay functionality."""
 
     def test_countdown_starts_thread(self, harness: TestHarness, monkeypatch) -> None:
-        """Ensure carrier jump completion starts the countdown thread."""
+        """Ensure countdown starts the countdown thread."""
 
         called:dict[str, bool] = {'flag': False}
 
@@ -217,6 +217,23 @@ class TestOverlay:
 
         monkeypatch.setattr(type(harness.overlay), '_countdown', fake_countdown, raising=False)
         harness.overlay.display_countdown('Carrier', 'Countdown', 100)
+
+        # The thread may run quickly; wait briefly for it to start
+        import time
+        time.sleep(0.05)
+        assert called['flag'] is True
+
+    def test_cooldown_shows_overlay(self, harness: TestHarness, monkeypatch) -> None:
+        """Ensure carrier jump completion starts the countdown thread."""
+
+        called:dict[str, bool] = {'flag': False}
+
+        def fake_countdown(self, frame, content, end, stop) -> None:
+            # Simulate some work then set flag
+            called['flag'] = True
+
+        monkeypatch.setattr(type(harness.context.overlay), '_countdown', fake_countdown, raising=False)
+        harness.play_sequence('cancel_carrier_jump')
 
         # The thread may run quickly; wait briefly for it to start
         import time
