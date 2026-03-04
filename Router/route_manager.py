@@ -126,7 +126,7 @@ class Router():
             Debug.logger.debug(f"Updating route")
             Context.ui.update_waypoint()
             self.update_jump_overlay()
-    
+
 
     def update_jump_overlay(self) -> None:
         """ Update overlay after a waypoint """
@@ -151,8 +151,14 @@ class Router():
             jstr += ", " + lbls["refuel"].format(r=next_refuel)
             jstr += " " + lbls["jump"] if next_refuel == 1 else lbls["jumps"]
 
-        message.append({'size': "normal", 'text': f"{jstr}"})        
+        message.append({'size': "normal", 'text': f"{jstr}"})
         Context.overlay.display_frame('Default', message, ttl=120)
+
+
+    def update_route(self, i:int) -> None:
+        """ Called by the UI when next or prev is clicked """
+        Context.route.update_route(i)
+        self.update_jump_overlay()
 
 
     def carrier_event(self, entry:dict) -> None:
@@ -160,7 +166,7 @@ class Router():
         #if Context.route.route == [] or Context.route.fleetcarrier == False: return
 
         match entry.get('event'):
-            case 'CarrierJumpRequest' if entry.get('SystemName', '') == Context.route.next_stop():
+            case 'CarrierJumpRequest': # if entry.get('SystemName', '') == Context.route.next_stop():
                 self.carrier_id = entry.get('CarrierID', '')
                 self.carrier_state = 'Jumping'
                 end:datetime = datetime.fromisoformat(entry.get("DepartureTime", ''))

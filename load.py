@@ -81,7 +81,8 @@ def journal_entry(cmdr:str, is_beta:bool, system:str, station:str, entry:dict, s
 
 
 def dashboard_entry(cmdr:str, is_beta:bool, entry:dict) -> None:
-    Context.overlay.dashboard_entry(cmdr, is_beta, entry)
+    if Context.overlay:
+        Context.overlay.dashboard_entry(cmdr, is_beta, entry)
 
 
 def plugin_prefs(parent:tk.Frame, cmdr: str, is_beta: bool) -> nb.Frame:

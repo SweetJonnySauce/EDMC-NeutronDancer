@@ -120,7 +120,7 @@ class UI():
         """ Display the chosen frame, recreating it if necessary """
         self.hide_error()
         self._show_busy_gui(False)
-        Context.router.cancel_plot = True  
+        Context.router.cancel_plot = True
         Context.overlay.hide_frame('Default')
         self.sub_fr.grid_remove()
 
@@ -501,10 +501,10 @@ class UI():
 
 
     @catch_exceptions
-    def update_waypoint(self) -> None:        
+    def update_waypoint(self) -> None:
         if Context.route.route == [] or not hasattr(self, 'waypoint_btn'):
             return
-        
+
         self.waypoint_prev_btn.config(state=tk.DISABLED if Context.route.offset == 0 else tk.NORMAL)
         self.waypoint_prev_tt:Tooltip = Tooltip(self.waypoint_prev_btn, Context.route.get_waypoint(-1))
         self.waypoint_next_btn.config(state=tk.DISABLED if Context.route.offset >= len(Context.route.route) -1 else tk.NORMAL)
@@ -812,13 +812,13 @@ class UI():
 
     def goto_next_waypoint(self) -> None:
         """ Move to the next waypoint """
-        Context.route.update_route(1)
+        Context.router.update_route(1)
         self.update_waypoint()
 
 
     def goto_prev_waypoint(self) -> None:
         """ Move back to the previous waypoint """
-        Context.route.update_route(-1)
+        Context.router.update_route(-1)
         self.update_waypoint()
 
 
@@ -894,7 +894,7 @@ class UI():
 
         # I don't love this. Overlay would be better.
         title:str = f"{NAME} – {hdrs['cooldown_title']}"
-        message:str = lbls['cooldown_complete']        
+        message:str = lbls['cooldown_complete']
         PopupNotice(title + "\n" + message, 20000, self.parent)
 
 

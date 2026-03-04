@@ -10,7 +10,7 @@ import operator
 
 from config import config # type: ignore
 
-from utils.debug import Debug
+from utils.debug import Debug, catch_exceptions
 
 """
   Miscellaneous utility functions
@@ -201,7 +201,8 @@ class PopupNotice:
             self.root.overrideredirect(True)
 
         self.root.attributes("-alpha", 0.6)
-        self.root.geometry(config.window_geometries.get('Alert', "300x150-1+0"))
+        #self.root.geometry(config.window_geometries.get('Alert', "300x150-1+0"))
+        self.root.geometry("300x150-1+0")
         self.root.attributes("-topmost", True)
 
         self.frame = tk.Frame(self.root, bg='red4', relief="raised")
@@ -227,7 +228,8 @@ class PopupNotice:
         y:int = self.root.winfo_y() + deltay
         self.root.geometry(f"+{x}+{y}")
 
+    @catch_exceptions
     def close(self) -> None:
         if self.root and self.root.winfo_exists():
-            self.config.window_geometries['Alert'] = self.root.winfo_geometry()
+            #self.config.window_geometries['Alert'] = self.root.winfo_geometry()
             self.root.destroy()

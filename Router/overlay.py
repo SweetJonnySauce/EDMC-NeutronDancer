@@ -17,7 +17,6 @@ try:
 except ImportError:
     edmcoverlay = None
 
-
 from config import config # type: ignore
 #from edmc_data import GuiFocusNoFocus, FlagsInMainShip, GuiFocusGalaxyMap # type: ignore
 import edmc_data # type: ignore
@@ -33,19 +32,8 @@ class OvFrame:
     name:str = 'Default'
     enabled:bool = True # Preference state
     visible:bool = True # Current visibility state
-    x:int = 0
-    y:int = 0
-    w:int = 0
-    h:int = 0
-    title_colour:str = 'white'
-    text_colour:str = 'white'
-    bgenabled:bool = False
-    background:str = 'grey'
-    border:str = ''
-    border_width:int = 0
-    anchor:str = "nw"
-    justification:str = "left"
-    text_size:str = "normal"
+    text_colour:str = "#ffffff"
+    ttl:int = 0
 
 class Overlay():
     """
@@ -67,16 +55,17 @@ class Overlay():
         # Only initialize if it's the first time
         if hasattr(self, '_initialized'): return
 
-        self.ovfrs:dict[str, OvFrame] = {'Default': OvFrame(), 'Carrier': OvFrame()}
+        self.ovfrs:dict[str, OvFrame] = {'Default': OvFrame(), 'Galaxy Map': OvFrame(), 'Carrier': OvFrame()}
         self.stoppers:dict[str, Event] = {}
         self._load_prefs()
-        self.create_frame(Context.plugin_name, self.ovfrs['Default'])
-        self.create_frame(Context.plugin_name, self.ovfrs['Carrier'])
+        for fr in self.ovfrs.values():
+            self.create_frame(Context.plugin_name, fr)
+
         self.msgs:dict = {}
         self._initialized = True
 
 
-    def _get_overlay(self) -> None:
+    def _get_overlay(self):
         """ Is an overlay installed and running? """
         if not edmcoverlay:
             Debug.logger.warning(f"edmcoverlay plugin is not installed")
@@ -111,7 +100,7 @@ class Overlay():
         """ Clear a message frame """
         overlay = self._get_overlay()
         if not overlay or frame not in self.msgs: return
-        
+
         self.ovfrs[frame].visible = False
         for m in self.msgs[frame].values():
             tmp:dict = deepcopy(m)
@@ -123,25 +112,19 @@ class Overlay():
 
     @catch_exceptions
     def create_frame(self, group:str, ovf:OvFrame) -> None:
-        """ Initialize a frame """        
+        """ Initialize a frame """
         if not self._get_overlay(): return
 
-        self.stoppers[group] = Event()
         kw:dict = {
             'plugin_group': group,
             'matching_prefixes': f"{group}-",
-            'id_prefix_group': ovf.name,
+            'id_prefix_group': f"{group} {ovf.name}",
             'id_prefixes': [f"{group}-{ovf.name}-"],
-            'id_prefix_group_anchor': ovf.anchor,
-            'payloadJustification': ovf.justification,
+            'id_prefix_group_anchor': "nw",
+            'payload_justification': "left",
             'marker_label_position': "below",
             'controller_preview_box_mode': "last",
         }
-
-        if ovf.bgenabled:
-            kw['background_color'] = ovf.background
-            kw['background_border_width'] = ovf.border_width
-
         define_plugin_group(**kw)
 
     @catch_exceptions
@@ -149,7 +132,7 @@ class Overlay():
         """ Display/update a frame with a set of messages """
 
         overlay = self._get_overlay()
-        Debug.logger.debug(f"Display called for {frame} {overlay} {self.ovfrs}")
+        Debug.logger.debug(f"Display called for {frame} {overlay}")
         if not overlay or frame not in self.ovfrs: return
         fr:OvFrame = self.ovfrs[frame]
 
@@ -159,14 +142,14 @@ class Overlay():
 
         self.ovfrs[frame].visible = True
         self.msgs[frame] = {}
-        y:int = fr.y
+        y:int = 0
         for i, c in enumerate(content):
             id:str = f"{Context.plugin_name}-{frame}-{i}"
             args:dict = {
                 'msgid': id,
                 'text': c.get('text', ''),
                 'color': c.get('colour', fr.text_colour),
-                'x': fr.x,
+                'x': 0,
                 'y': y,
                 'ttl': c.get('ttl', ttl), # @TODO: ttl needs to be a datetime
                 'size': c.get('size', 'normal')
@@ -179,54 +162,37 @@ class Overlay():
             y += 20 # @TODO This needs to adapt to text size
 
 
-
     def _timedelta_str(self, delta:timedelta) -> str:
         """ Display remaining time showing hh:mm:ss """
-        days , rem = divmod(int(delta.seconds), 60*60*24)
-        hours, rem = divmod(rem, 60*60)
-        mins, secs = divmod(rem, 60)
-        tmp:list = []
-        if floor(days) > 1: tmp.append(f"{floor(days)} days")
-        elif int(days) > 0: tmp.append(f"1 day")
-        if floor(hours) > 1: tmp.append(f"{floor(hours)} hours")
-        elif int(hours) > 0: tmp.append(f" 1 hour")
-        if floor(mins) > 1 and len(tmp) < 2:
-            if floor(mins) > 1: tmp.append(f" {int(mins)} minutes")
-        elif floor(mins) > 0: tmp.append(f" 1 minute")
-        if floor(secs) > 1 and len(tmp) < 2:
-            if floor(secs) > 1: tmp.append(f" {int(secs)} seconds")
-            elif secs > 0: tmp.append(f" 1 second")
-        return ' '.join(tmp)
-
-    #    s:int = delta.seconds
-    #    unit:int = 3600
-    #    res:str = ""
-    #    while unit > 1:
-    #        t, s = divmod(s, unit)
-    #        unit = int(unit / 60)
-    #        if t > 0:
-    #            res += f"{t:02d}"
-    #    return res
+        s:int = delta.seconds
+        unit:int = 60
+        res:list = []
+        while unit > 0:
+            t, s = divmod(s, unit)
+            unit = int(unit / 60)
+            if t > 0 or unit < 3600:
+                res.append(f"{t:02d}")
+        return ':'.join(res)
 
 
     @catch_exceptions
     def _countdown(self, frame:str, content:str|list[dict], end:datetime, stop:Event) -> None:
         """ Update the countdown display frame until zero or stopped """
-        rem = end - datetime.now(tz=end.tzinfo)
+        rem:timedelta = end - datetime.now(tz=end.tzinfo)
         while rem.seconds > 0 and not stop.wait(1):
             rem = end - datetime.now(tz=end.tzinfo)
-            display = [{k:v.format(t=self._timedelta_str(rem)) for k, v in c} for c in content] \
+            display:list|str = [{k:v.format(t=self._timedelta_str(rem)) for k, v in c} for c in content] \
                 if isinstance(content, list) else content.format(t=self._timedelta_str(rem))
-            Debug.logger.debug(f"Countdown {frame} {display}")
             Context.overlay.display_frame(frame, display, ttl=1)
 
         stop.clear()
+        Context.overlay.display_frame(frame, '', ttl=1)
         Debug.logger.debug("Countdown thread is ending.")
 
 
     def stop_countdown(self, frame:str) -> None:
         """ Stop a countdown display for a frame """
-        if frame not in self.ovfrs: return
+        if frame not in self.stoppers: return
         self.stoppers[frame].set()
 
 
@@ -236,10 +202,10 @@ class Overlay():
         Like display message but with a countdown either until a specific time or for some number of seconds
         The countdown should be in a variable t in the content string
         """
-        Debug.logger.debug(f"Countdown starting")
+        Debug.logger.debug(f"Countdown starting {content} {end}")
         if end == None or frame not in self.ovfrs: return
         if isinstance(end, int): end = datetime.now() + timedelta(seconds=end)
-
+        self.stoppers[frame] = Event()
         Thread(target=self._countdown, args=(frame, content, end, self.stoppers[frame]),
                                              name=f"{Context.plugin_name}_{frame} overlay countdown worker").start()
 
@@ -294,13 +260,7 @@ class Overlay():
 
         pref_opts:list = [
             ('enabled', 'Enable', tk.BooleanVar, tk.Checkbutton),
-            ('x', 'X', tk.IntVar, tk.Entry),
-            ('y', 'Y', tk.IntVar, tk.Entry),
-            #('w', 'W', tk.IntVar, tk.Entry),
-            #('h', 'H', tk.IntVar, tk.Entry),
             ('text_colour', 'Foreground', tk.StringVar, 'ColorPicker'),
-            #('bgenabled', 'Use Background', tk.BooleanVar, tk.Checkbutton),
-            #('background', 'Background', tk.StringVar, 'ColorPicker')
             ]
 
         # Hide existing messages. Redraw them in the new location when the user clicks save
@@ -310,34 +270,29 @@ class Overlay():
         ovrprefs.columnconfigure(6, weight=1)
         ovrprefs.rowconfigure(60, weight=1)
         ovrprefs.grid()
-        validate:tuple = (ovrprefs.register(validate_int), '%P')
 
         row:int = 0; col:int = 0
         nb.Label(ovrprefs, text="Overlays", justify=tk.LEFT).grid(row=row, column=0, padx=10, sticky=tk.NW); row += 1
 
         # Loop through the frames and create a preferences line for each
         vars:dict = {}; cbtns:dict = {}
+        row += 1; col = 0
         for name, fr in self.ovfrs.items():
-            nb.Label(ovrprefs, text=name, justify=tk.LEFT).grid(row=row, column=0, padx=10, sticky=tk.NW)
-            row += 1; col = 0
+            nb.Label(ovrprefs, text=name, justify=tk.LEFT).grid(row=row, column=col, padx=10, sticky=tk.NW)
+            col += 1
             for k in pref_opts:
                 var = bind_var(fr, k[0], k[2](value=getattr(fr, k[0])))
                 vars[f"{name}-{k[0]}"] = var
                 match k[3]:
                     case tk.Checkbutton:
                         nb.Checkbutton(ovrprefs, text=k[1], variable=var).grid(row=row, column=col, padx=10, pady=0, sticky=tk.W)
-                    case tk.Entry:
-                        nb.Label(ovrprefs, text=k[1]).grid(row=row, column=col, padx=5, pady=5, sticky=tk.W)
-                        col += 1
-                        ent:tk.Entry = tk.Entry(ovrprefs, textvariable=var, width=8, validate='all', validatecommand=validate)
-                        ent.grid(row=row, column=col, padx=5, pady=5, sticky=tk.W)
                     case 'ColorPicker':
-                        btn:tk.Button = tk.Button(ovrprefs, text=k[1], foreground=fr.text_colour, background=fr.background,
+                        btn:tk.Button = tk.Button(ovrprefs, text=k[1], foreground=fr.text_colour,
                                                   command=partial(colour_picker, ovrprefs, name, k[1], var))
                         btn.grid(row=row, column=col, padx=5, pady=5, sticky=tk.W)
                         cbtns[name] = btn
                 col += 1
-            row += 1
+            #row += 1
         return ovrprefs
 
 
@@ -363,4 +318,7 @@ class Overlay():
             Debug.logger.debug(f"Loading config: {conf}")
             if conf == None: continue
             data:dict = json.loads(conf)
-            self.ovfrs[name] = OvFrame(**data)
+            try:
+                self.ovfrs[name] = OvFrame(**data)
+            except:
+                pass
