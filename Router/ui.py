@@ -838,11 +838,11 @@ class UI():
 
         # Try to use a CLI clipboard tool first
         clipboard_cli:str|None = os.getenv("EDMC_CLIPBOARD_CLI", None)
-        if shutil.which("wl-copy"):
+        if not clipboard_cli and shutil.which("wl-copy"):
             clipboard_cli = "wl-copy"
-        elif shutil.which("xsel"):
+        if not clipboard_cli and shutil.which("xsel"):
             clipboard_cli = "xsel --clipboard --input"
-        elif shutil.which("xclip"):
+        if not clipboard_cli and shutil.which("xclip"):
             clipboard_cli = "xclip -selection c -target UTF8_STRING"
 
         if clipboard_cli != None:
