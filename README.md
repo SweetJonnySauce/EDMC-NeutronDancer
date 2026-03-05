@@ -84,13 +84,17 @@ The **Export route** button will open a file dialog allowing you to save the cur
 
 ### Overlay Support
 
-This requires the EDMC Modern Overlay to be installed. To enable overlay display, in the ED:MC options select Navl's Neutron Dancer.
+This requires the EDMC Modern Overlay to be installed, older overlays aren't supported. 
+
+To enable overlay display, in the ED:MC options select Navl's Neutron Dancer, activate the overlay frames you want and choose the text colour.
 
 Three overlays are available.
 
 1. _Default_ when enabled this will display the next jump in the current route and other details in the ship main window
 2. _Galaxy Map_, this displays the same information as _Default_ but only shows in the Galaxy Map so the colour and location can be distinct
 3. _Carrier_, this displays carrier jump and cooldown timers
+
+To change overlay frame positions, set backgrounds etc. use Modern Overlay's controller.
 
 ### Chat Commands
 
