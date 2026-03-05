@@ -1,8 +1,8 @@
 from config import config  # type: ignore
 
 # Project information
-NAME="Navl's Neutron Dancer"
-OVERLAY_NAME="NeutronDancer"
+TITLE="Navl's Neutron Dancer"
+NAME="NeutronDancer"
 GH_USER="dwomble"
 GH_PROJECT="EDMC-NeutronDancer"
 
@@ -76,6 +76,10 @@ HEADER_TYPES:dict = {"System Name": ["str", ""],
                     "Restock Tritium": ["bool", ""]
                 }
 
+# Different ways a file might store true/false
+TRUE:list = [True, "True", "true", "YES", "Yes", "yes", 1, "1"]
+FALSE:list = [False, "False", "false", "NO", "No", "no", 0, "0"]
+
 """
 Output strings
 """
@@ -101,7 +105,6 @@ lbls:dict = {
     "restock_tritium": "Time to restock Tritium",
     "source_system": "Source System",
     "dest_system": "Destination System",
-    "range": "Range (LY)",
     "supercharge_label": "Supercharge Multiplier",
     "standard_supercharge": "Standard (x4)",
     "overcharge_supercharge": "Overcharge (x6)",
@@ -110,6 +113,7 @@ lbls:dict = {
     "update_available": "Version {v} will be installed on exit. Click to cancel.",
     "jump": "jump",
     "jumps": "jumps",
+    "range": "Ship Range",
     "waypoints": "waypoints",
     "distance": "distance",
     "total_distance": "Total Distance",
@@ -130,7 +134,10 @@ lbls:dict = {
     "dist_per_hour": "Ly/hr",
     "refuel": "Refuel",
     "carrier_jumping": "Carrier Jump Scheduled",
-    "carrier_cooldown": "Carrier Cooldown"
+    "carrier_cooldown": "Carrier Cooldown",
+    "next_refuel": "Refuel in {r}",
+    "refuel_now": "Time to refuel",
+    "overlays": "Overlays"
 }
 
 # Tooltips
@@ -196,4 +203,9 @@ cnf:dict = {
     "X": "X",
     "Y": "Y",
     "overlay_colour": "Overlay Colour"
+}
+
+ovr:dict = {
+    "jump": "Carrier jump in {t}",
+    "cooldown": "Carrier cooldown {t}"
 }

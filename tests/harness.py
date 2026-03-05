@@ -13,15 +13,26 @@ from typing import Optional, Callable, Dict
 from datetime import datetime, timezone
 from time import sleep
 import logging
+import types as _types
+import tkinter as tk
+from tkinter import ttk
+import tkinter.messagebox
 
 # Configure logging to output INFO level messages and higher to the console
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
 
 # Add plugin directory to path for imports (go up one level from tests/)
 plugin_dir:Path = Path(__file__).parent.parent
 sys.path.insert(0, str(plugin_dir))
 
+# We keep a copy of edmc_data here.
+this_dir = Path(__file__).parent
+sys.path.insert(0, str(this_dir))
+
+print(f"{sys.path}")
+from mock_tk import MockTk
+tk = MockTk
+tk.PhotoImage = MockTk.PhotoImage
 # Mock EDMC's config module (only if not already mocked)
 if 'config' not in sys.modules:
     class MockConfig:
@@ -41,7 +52,9 @@ if 'config' not in sys.modules:
         def set(self, key, value):
             self.data[key] = value
 
-    import types as _types
+        def get_int(self, key):
+            return int(self.data.get(key, 0)) #type: ignore
+
     _cfg = _types.ModuleType('config')
     _cfg.appname = 'EDMC' # type:ignore
     _cfg.config = MockConfig() # type:ignore
@@ -49,164 +62,69 @@ if 'config' not in sys.modules:
     sys.modules['config'] = _cfg
 
 # Minimal EDMC `theme` module emulator for direct runs (examples.py / __main__)
-import types
-from types import SimpleNamespace
-theme_mod = types.ModuleType("theme")
-theme_mod.theme = SimpleNamespace() # type:ignore
+theme_mod = _types.ModuleType("theme")
+theme_mod.theme = _types.SimpleNamespace() # type:ignore
 theme_mod.theme.name = "default"
 theme_mod.theme.dark = False
 sys.modules['theme'] = theme_mod
 
-# Mock tkinter modules for testing
-try:
-    import tkinter as tk
-    from tkinter import ttk
-    import tkinter.messagebox
-except ImportError:
-    # If tkinter is not available, create mock modules
-    class MockTk:
-        """Mock tkinter module"""
-        class Widget: pass
-        class Frame(Widget): pass
-        class Toplevel(Widget): pass
-        class Label(Widget): pass
-        class Button(Widget): pass
-        class Radiobutton(Widget): pass
-        class Checkbutton(Widget): pass
-        class Entry(Widget): pass
-        class Text(Widget): pass
-        class Canvas(Widget): pass
-        class Listbox(Widget): pass
-        class Scale(Widget): pass
-        class Spinbox(Widget): pass
-        class LabelFrame(Widget): pass
-        class Message(Widget): pass
-        class Scrollbar(Widget): pass
-        class OptionMenu(Widget): pass
-        class Menubutton(Widget): pass
-        class Menu(Widget): pass
 
-        # Constants
-        NSEW = "nsew"
-        NW = "nw"
-        N = "n"
-        NE = "ne"
-        W = "w"
-        CENTER = "center"
-        E = "e"
-        SW = "sw"
-        S = "s"
-        SE = "se"
-        LEFT = "left"
-        RIGHT = "right"
-        TOP = "top"
-        BOTTOM = "bottom"
-        BOTH = "both"
-        NONE = "none"
-        X = "x"
-        Y = "y"
-        END = "end"
-        DISABLED = "disabled"
-        NORMAL = "normal"
+class MockEDMCOverlay:
+    def __init__(self): pass
 
-        StringVar: Callable[[], None] = lambda: None
-        IntVar: Callable[[], None] = lambda: None
-        BooleanVar: Callable[[], None] = lambda: None
+class Mockedmcoverlay:
+    def __init__(self): pass
 
-    class MockTtk:
-        """Mock tkinter.ttk module"""
-        class Frame(MockTk.Frame): pass
-        class Label(MockTk.Label): pass
-        class Button(MockTk.Button): pass
-        class Entry(MockTk.Entry): pass
-        class Combobox(MockTk.Entry): pass
-        class Checkbutton(MockTk.Checkbutton): pass
-        class Radiobutton(MockTk.Radiobutton): pass
-        class Scrollbar(MockTk.Scrollbar): pass
-        class LabelFrame(MockTk.LabelFrame): pass
-        class Notebook(MockTk.Frame): pass
-        class Scale(MockTk.Scale): pass
-        class Progressbar(MockTk.Canvas): pass
-
-    class MockMessagebox:
-        """Mock tkinter.messagebox module"""
+    class Overlay():
+        def __init__(self): pass
         @staticmethod
-        def showinfo(title, message): pass
-        @staticmethod
-        def showerror(title, message): pass
-        @staticmethod
-        def showwarning(title, message): pass
-        @staticmethod
-        def askyesno(title, message): return False
-        @staticmethod
-        def askokcancel(title, message): return False
-
-    import types as _types
-
-    _tk_mod = _types.ModuleType('tkinter')
-    # attach classes and constants from MockTk to the module
-    for name, val in MockTk.__dict__.items():
-        if not name.startswith('__'):
-            setattr(_tk_mod, name, val)
-
-    _ttk_mod = _types.ModuleType('tkinter.ttk')
-    for name, val in MockTtk.__dict__.items():
-        if not name.startswith('__'):
-            setattr(_ttk_mod, name, val)
-
-    _msg_mod = _types.ModuleType('tkinter.messagebox')
-    # copy static methods from MockMessagebox to module-level callables
-    _msg_mod.showinfo = MockMessagebox.showinfo # type:ignore
-    _msg_mod.showerror = MockMessagebox.showerror # type:ignore
-    _msg_mod.showwarning = MockMessagebox.showwarning # type:ignore
-    _msg_mod.askyesno = MockMessagebox.askyesno # type:ignore
-    _msg_mod.askokcancel = MockMessagebox.askokcancel # type:ignore
-
-    sys.modules['tkinter'] = _tk_mod
-    sys.modules['tkinter.ttk'] = _ttk_mod
-    sys.modules['tkinter.messagebox'] = _msg_mod
-
-# Mock myNotebook module
-class MockNotebook:
-    """Mock myNotebook (nb) module"""
-    class Frame:
-        def __init__(self, parent=None, **kw): pass
-    class Label:
-        def __init__(self, parent=None, **kw): pass
-    class Button:
-        def __init__(self, parent=None, **kw): pass
-    class Entry:
-        def __init__(self, parent=None, **kw): pass
-    class Combobox:
-        def __init__(self, parent=None, **kw): pass
-    class Checkbutton:
-        def __init__(self, parent=None, **kw): pass
-    class Radiobutton:
-        def __init__(self, parent=None, **kw): pass
-    class Scrollbar:
-        def __init__(self, parent=None, **kw): pass
-    class LabelFrame:
-        def __init__(self, parent=None, **kw): pass
-    class Notebook:
-        def __init__(self, parent=None, **kw): pass
-
-import types as _types
-_nb_mod = _types.ModuleType('myNotebook')
-# attach classes from MockNotebook to module
-for name, val in MockNotebook.__dict__.items():
+        def send_message(**kw): pass
+        
+_edmcoverlay = _types.ModuleType('EDMCOverlay')
+for name, val in MockEDMCOverlay.__dict__.items():
     if not name.startswith('__'):
-        setattr(_nb_mod, name, val)
-sys.modules['myNotebook'] = _nb_mod
+        setattr(_edmcoverlay, name, val)
+sys.modules['EDMCOverlay'] = _edmcoverlay
+
+_overlay = _types.ModuleType('edmcoverlay')
+for name, val in Mockedmcoverlay.__dict__.items():
+    if not name.startswith('__'):
+        setattr(_overlay, name, val)
+sys.modules['EDMCOverlay.edmcoverlay'] = _overlay
+
+# Mock up the modern overlay and its plugin 
+class MockOverlay_Plugin:
+    def __init__(self, **kw): pass
+class Mockoverlay_api:
+    def __init__(self, **kw): pass
+    @staticmethod
+    def define_plugin_group(**kw): pass
+    
+_overlay_plugin = _types.ModuleType('overlay_plugin')
+for name, val in MockOverlay_Plugin.__dict__.items():
+    if not name.startswith('__'):
+        setattr(_overlay_plugin, name, val)
+sys.modules['overlay_plugin'] = _overlay_plugin
+
+_overlay_api = _types.ModuleType('overlay_api')
+for name, val in Mockoverlay_api.__dict__.items():
+    if not name.startswith('__'):
+        setattr(_overlay_api, name, val)
+sys.modules['overlay_plugin.overlay_api'] = _overlay_api
 
 # Now we can import Router modules
+from config import config # type: ignore
 from Router.context import Context
 from Router.route_manager import Router
 from Router.route import Route
+from Router.ui import UI
 from Router.ship import Ship
 from Router.csv import CSV
+from Router.constants import NAME, TITLE
+from Router.overlay import Overlay
 
 class TestHarness:
-    """Main test harness for the Neutron Dancer plugin."""
+    """ Main test harness for the Neutron Dancer plugin. """
     # Prevent pytest from trying to collect this helper class as a test class
     __test__ = False
 
@@ -226,7 +144,8 @@ class TestHarness:
 
         # Initialize context
         Context.plugin_dir = self.plugin_dir
-        Context.plugin_name = "Neutron Dancer"
+        Context.plugin_title = TITLE
+        Context.plugin_name = NAME
 
         # Initialize router (singleton)
 
@@ -235,7 +154,6 @@ class TestHarness:
 
         self.csv = CSV()
         Context.csv = self.csv
-        self.context = Context
 
         # Ensure minimal module data present for ship calculations during tests
         try:
@@ -264,65 +182,47 @@ class TestHarness:
         except Exception:
             pass
 
+        self.overlay = Overlay()
+        Context.overlay = self.overlay
+
+        # This got stuck with annoying PhotoImage
+        #parent:tk.Widget = MockTk.Widget() # type: ignore
+        self.ui = UI()
+        self.ui.frame = MockTk.Frame #type: ignore
+        Context.ui = self.ui
+        
+        self.context = Context
+
         # Event handlers registered by plugins
         self.journal_handlers: list[Callable] = []
         self.state_change_handlers: list[Callable] = []
-
-        # Ensure a minimal UI stub exists for headless/test environments
-        try:
-            if getattr(Context, 'ui', None) is None:
-                class _StubUI:
-                    def __init__(self):
-                        self.frame = SimpleNamespace()
-                        # simple after() implementation used by Router
-                        def after(ms, cb):
-                            # don't schedule background calls during tests
-                            return None
-                        self.frame.after = after
-                        self.parent = None
-
-                    def switch_ship(self, ship):
-                        return None
-
-                    def update_waypoint(self):
-                        return None
-
-                    def ctc(self, arg=None):
-                        return None
-
-                    def show_frame(self, which=None):
-                        return None
-
-                    def show_error(self, msg=None):
-                        return None
-
-                    def cooldown_complete(self):
-                        return None
-
-                Context.ui = _StubUI()  # type: ignore
-        except Exception:
-            pass
+        self.config = config
 
     def setup(self, config_file:str = "test_config.json") -> None:
-        """ Setup the harness with a given config file. """
+        """ Setup the harness with a specific config file. """
 
         # Load config
-        config_path:Path = self.plugin_dir / config_file
+        config_path:Path = self.plugin_dir / "data" / config_file
         if config_path.exists():
             try:
                 with open(config_path, 'r') as f:
                     self.router._from_dict(json.load(f))
             except Exception as e:
-                print(f"Warning: Could not load config file {config_path}: {e}")
+                print(f"Warning: Could not load setup file {config_path}: {e}")
 
+
+    def set_edmc_config(self, config_file:str = "emdc_config.json") -> None:
+        # Load config
+        config_path:Path = self.plugin_dir / "data" / config_file
+        if config_path.exists():
+            try:
+                with open(config_path, 'r') as f:
+                    self.config.set(json.load(f))
+            except Exception as e:
+                print(f"Warning: Could not load edmc config file {config_path}: {e}")
 
     def register_journal_handler(self, handler: Callable) -> None:
-        """
-        Register a journal event handler (simulates journal_entry callback).
-
-        Args:
-            handler: Callable that accepts (cmdr, is_beta, system, station, entry, state)
-        """
+        """ Register a journal event handler (simulates journal_entry callback). """
         self.journal_handlers.append(handler)
 
 
@@ -346,7 +246,12 @@ class TestHarness:
             except Exception as e:
                 print(f"Error in journal handler: {e}")
                 raise
-        sleep(0.5)  # Allow time for any asynchronous processing (if applicable)
+            sleep(0.5)  # Allow time for any asynchronous processing (if applicable)
+        
+    def play_sequence(self, name:str) -> None:
+        """ Fire a sequence of events """
+        for event in self.events.get(name, []):
+            self.fire_event(event)
         
     def set_ship(self, ship_name:str) -> None:
         """ Set the current ship in the router context. """
@@ -358,7 +263,7 @@ class TestHarness:
         self.router.ships[self.router.ship_id] = self.router.ship
 
     def _load_events(self) -> Dict[str, list]:
-        """Load journal events from events.json file."""
+        """ Load journal events from events.json file. """
         events:Dict[str, list] = {}
 
         EVENTS_FILE = Path(self.plugin_dir, "config", "journal_events.json")
@@ -375,7 +280,7 @@ class TestHarness:
         return events
 
     def _load_loadouts(self) -> Dict[str, dict]:
-        """Load ship loadouts from loadouts.json file."""
+        """ Load ship loadouts from loadouts.json file. """
         loadouts:Dict[str, dict] = {}
 
         LOADOUTS_FILE = Path(self.plugin_dir, "config", "loadouts.json")

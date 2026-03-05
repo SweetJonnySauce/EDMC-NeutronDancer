@@ -26,7 +26,7 @@ from .ship import Ship
 from .route import Route
 from .context import Context
 from .route_window import RouteWindow
-from .overlay import Overlay
+
 class UI():
     """
         The main UI for the router.
@@ -85,6 +85,9 @@ class UI():
         self.sub_fr:tk.Frame = self.title_fr
         self.show_frame('Route' if Context.route.route != [] else 'Default')
 
+        self.cooldown_popup:bool = True
+        self._load_prefs()
+
         # Wait a while before deciding if we should show the update text
         parent.after(30000, lambda: self.show_update())
         self._initialized = True
@@ -118,7 +121,8 @@ class UI():
         self.hide_error()
         self._show_busy_gui(False)
         Context.router.cancel_plot = True
-        Overlay().show_message('Default', ["title", "", "normal", ""], ttl=1)
+        Context.overlay.hide_frame('Default')
+        Context.overlay.hide_frame('Galaxy Map')
         self.sub_fr.grid_remove()
 
         Context.router.neutron_params['range'] = f"{Context.router.ship.get_range(Context.router.cargo):.2f}" if Context.router.ship else "32.0"
@@ -156,7 +160,8 @@ class UI():
         self.lbl:tk.Label|ttk.Label = label(title_fr, text=lbls["plot_title"], font=BOLD)
         self.lbl.grid(row=row, column=col, padx=(0,5), pady=5)
         col += 1
-        plot_gui_btn:tk.Button|ttk.Button = button(title_fr, text=" "+btns["plot_route"]+" ", command=lambda: self.show_frame(Context.router.last_plot))
+        plot_gui_btn:tk.Button|ttk.Button = button(title_fr, text=" "+btns["plot_route"]+" ",
+                                                   command=lambda: self.show_frame(Context.router.last_plot))
         plot_gui_btn.grid(row=row, column=col, sticky=tk.W)
 
         return title_fr
@@ -165,13 +170,15 @@ class UI():
     def _create_busy_fr(self, parent:tk.Frame) -> tk.Frame:
         """ Spinner image for route plotting """
 
-        image:str = os.path.join(Context.plugin_dir, ASSET_DIR, "progress_animation_light.gif" if config.get_int('theme') == 0 else "progress_animation_dark.gif")
+        image:str = os.path.join(Context.plugin_dir, ASSET_DIR,
+                                 "progress_animation_light.gif" if config.get_int('theme') == 0 else "progress_animation_dark.gif")
         self.frameCnt:int = 44
         self.frameSpd:int = 50
 
         self.frames:list = [tk.PhotoImage(file=image, format='gif -index %i' %(i)) for i in range(self.frameCnt)]
         busy_fr:tk.Frame = frame(parent)
-        self.route_lbl:ttk.Label|tk.Label = label(busy_fr, text=lbls["plotting"].format(s=Context.router.src, d=Context.router.dest), justify=tk.CENTER, font=BOLD)
+        self.route_lbl:ttk.Label|tk.Label = label(busy_fr, text=lbls["plotting"].format(s=Context.router.src, d=Context.router.dest),
+                                                  justify=tk.CENTER, font=BOLD)
         self.route_lbl.pack(pady=5, anchor=tk.CENTER)
         self.busyimg:ttk.Label|tk.Label = label(busy_fr, image=self.frames[0], justify=tk.CENTER)
         self.busyimg.pack(anchor=tk.CENTER, fill=tk.BOTH, pady=10)
@@ -183,12 +190,15 @@ class UI():
     def _plot_switcher(self, fr:tk.Frame, row:int, col:int) -> None:
         """ Switch between the two route plotters """
         sfr:tk.Frame = frame(fr, width=self.frwidth)
-        r1:tk.Radiobutton|ttk.Radiobutton = radiobutton(sfr, text=lbls["neutron_router"], variable=self.router, value='Neutron', command=lambda: self.show_frame('Neutron'))
+        r1:tk.Radiobutton|ttk.Radiobutton = radiobutton(sfr, text=lbls["neutron_router"], variable=self.router, value='Neutron',
+                                                        command=lambda: self.show_frame('Neutron'))
         r1.grid(row=0, column=0, padx=5, pady=5)
-        r2:tk.Radiobutton|ttk.Radiobutton = radiobutton(sfr, text=lbls["galaxy_router"], variable=self.router, value='Galaxy', command=lambda: self.show_frame('Galaxy'))
+        r2:tk.Radiobutton|ttk.Radiobutton = radiobutton(sfr, text=lbls["galaxy_router"], variable=self.router, value='Galaxy',
+                                                        command=lambda: self.show_frame('Galaxy'))
         r2.grid(row=0, column=1, padx=5, pady=5)
         # Use help.png image if available (prefer transparent PNG), fallback to text '!'
-        r3:tk.Button|ttk.Button = button(sfr, image=self.help_img, cursor="hand2", command=lambda: self._show_help())
+        # This has to be a tk.Button or EDMC's theme throws some kind of error about setting a foreground
+        r3:tk.Button = tk.Button(sfr, image=self.help_img, cursor="hand2", command=lambda: self._show_help())
         r3.grid(row=0, column=2, padx=5, pady=5)
         sfr.grid(row=row, column=col, columnspan=3, sticky=tk.EW)
 
@@ -514,10 +524,11 @@ class UI():
             wp += f" ({Context.route.jumps_to_wp()} {lbls['jumps'] if Context.route.jumps_to_wp() != 1 else lbls['jump']})"
         self._update_progbar()
 
-        if Context.route.fleetcarrier == True and Context.router.carrier_state == 'Jumping' and Context.route.get_waypoint(-1) == Context.router.system:
-            wp = f"{lbls['carrier_jumping']}"
-        if Context.route.fleetcarrier == True and Context.router.carrier_state == 'Cooldown' and Context.route.get_waypoint(-1) == Context.router.system:
-            wp = f"{lbls['carrier_cooldown']}"
+        if Context.route.fleetcarrier == True and Context.route.get_waypoint(-1) == Context.router.system:
+            if Context.router.carrier_state == 'Jumping':
+                wp = f"{lbls['carrier_jumping']}"
+            if Context.router.carrier_state == 'Cooldown':
+                wp = f"{lbls['carrier_cooldown']}"
 
         # Set an icon if appropriate
         image:tk.PhotoImage|str = ''  # Empty image
@@ -525,19 +536,6 @@ class UI():
             image=self.fuel_img
             wp = ' ' + wp + ' '
         self.waypoint_btn.configure(text=wp, image=image, compound=tk.RIGHT)
-
-        message:list = ['large', "Next: " + str(wp)]
-        jumps:tuple = tuple([Context.route.total_jumps() - Context.route.jumps_remaining(), 'int', '0'])
-        tjumps:tuple = tuple([Context.route.total_jumps(), 'int'])
-        txt:str = lbls['jumps'] if Context.route.jc != None else lbls['waypoints']
-        jstr:str = f"{txt} {hfplus(jumps)}/{hfplus(tjumps)}"
-        if Context.route.total_dist() > 0:
-            jstr += f", {lbls['distance']} "
-            dist:tuple = tuple([Context.route.total_dist() - Context.route.dist_remaining(), 'float', '0', ''])
-            jstr += f"{hfplus(dist)}/{hfplus(Context.route.total_dist())} ly"
-
-        message.extend(["normal", f"{jstr}"])
-        Overlay().show_message('Default', message, ttl=60)
 
 
     def _create_route_fr(self, parent:tk.Frame) -> tk.Frame:
@@ -549,7 +547,8 @@ class UI():
         self.bar_fr.grid_propagate(False)
         self.bar_fr.grid(row=0, column=0, pady=0, sticky=tk.EW)
 
-        self.progbar = ttk.Progressbar(self.bar_fr, orient=tk.HORIZONTAL, value=self._progress(), maximum=100, mode='determinate', length=self.frwidth-3)
+        self.progbar = ttk.Progressbar(self.bar_fr, orient=tk.HORIZONTAL, value=self._progress(), maximum=100, mode='determinate',
+                                       length=self.frwidth-3)
         self.progtt:Tooltip = Tooltip(self.progbar, text=tts["progress"])
         self.progbar.rowconfigure(0, weight=1)
         self.progbar.grid(row=0, column=0, pady=0, ipady=0, sticky=tk.EW)
@@ -569,7 +568,8 @@ class UI():
         self.waypoint_prev_btn.grid(row=row, column=col, padx=5, pady=5, sticky=tk.W)
 
         col += 1
-        self.waypoint_btn:tk.Button|ttk.Button = button(fr1, text=Context.route.next_stop(), width=40, command=lambda: self.ctc(Context.route.next_stop()))
+        self.waypoint_btn:tk.Button|ttk.Button = button(fr1, text=Context.route.next_stop(), width=40,
+                                                        command=lambda: self.ctc(Context.route.next_stop()))
         Tooltip(self.waypoint_btn, tts["copy_to_clipboard"])
         self.waypoint_btn.grid(row=row, column=col, padx=5, pady=5, sticky=tk.EW)
 
@@ -588,7 +588,8 @@ class UI():
         self.export_route_btn.grid(row=row, column=col, padx=5, sticky=tk.W)
 
         col += 1
-        self.show_route_btn:tk.Button|ttk.Button = button(fr2, text=btns["show_route"], command=lambda: self.window_route.show(Context.route))
+        self.show_route_btn:tk.Button|ttk.Button = button(fr2, text=btns["show_route"],
+                                                          command=lambda: self.window_route.show(Context.route))
         self.show_route_btn.grid(row=row, column=col, padx=5, sticky=tk.W)
 
         col += 1
@@ -665,10 +666,7 @@ class UI():
 
     def _clear_route(self) -> None:
         """ Display a confirmation dialog for clearing the current route """
-        clear:bool = confirmDialog.askyesno(
-            Context.plugin_name,
-            lbls["clear_route_yesno"]
-        )
+        clear:bool = confirmDialog.askyesno(Context.plugin_title, lbls["clear_route_yesno"])
         if clear == True:
             self.show_frame(Context.router.last_plot)
             Context.route = Route()
@@ -815,13 +813,13 @@ class UI():
 
     def goto_next_waypoint(self) -> None:
         """ Move to the next waypoint """
-        Context.route.update_route(1)
+        Context.router.update_route(1)
         self.update_waypoint()
 
 
     def goto_prev_waypoint(self) -> None:
         """ Move back to the previous waypoint """
-        Context.route.update_route(-1)
+        Context.router.update_route(-1)
         self.update_waypoint()
 
 
@@ -840,16 +838,19 @@ class UI():
 
         # Try to use a CLI clipboard tool first
         clipboard_cli:str|None = os.getenv("EDMC_CLIPBOARD_CLI", None)
-        if shutil.which("wl-copy"):
+        if not clipboard_cli and os.getenv("XDG_SESSION_TYPE") == "wayland" and shutil.which("wl-copy"):
             clipboard_cli = "wl-copy"
-        elif shutil.which("xsel"):
+        if not clipboard_cli and os.getenv("XDG_SESSION_TYPE") == "x11" and shutil.which("xsel"):
             clipboard_cli = "xsel --clipboard --input"
-        elif shutil.which("xclip"):
+        if not clipboard_cli and os.getenv("XDG_SESSION_TYPE") == "x11" and shutil.which("xclip"):
             clipboard_cli = "xclip -selection c -target UTF8_STRING"
 
         if clipboard_cli != None:
             Debug.logger.debug(f"Using linux clipboard: {clipboard_cli}")
-            subprocess.run(clipboard_cli.split(), input=text.encode('utf-8'), check=True)
+            try:
+                subprocess.run(clipboard_cli.split(), input=text.encode('utf-8'), check=True)
+            except subprocess.CalledProcessError as e:
+                Debug.logger.error(f"Failed to run {clipboard_cli}: {e}")
             return
 
         # Fallback to the tkinter version
@@ -879,7 +880,8 @@ class UI():
     def query_systems(self, inp:str) -> list:
         """ Function called by Autocompleter """
         try:
-            results:requests.Response = requests.get(SPANSH_SYSTEMS, params={'q': inp.strip()}, headers={'User-Agent': Context.plugin_useragent}, timeout=3)
+            results:requests.Response = requests.get(SPANSH_SYSTEMS, params={'q': inp.strip()},
+                                                     headers={'User-Agent': Context.plugin_useragent}, timeout=3)
         except:
             return [inp]
         return json.loads(results.content)
@@ -887,30 +889,89 @@ class UI():
 
     @catch_exceptions
     def cooldown_complete(self) -> None:
-        """Show an informational messagebox indicating a carrier cooldown has completed."""
+        """ Show an informational messagebox indicating a carrier cooldown has completed. """
         Debug.logger.debug(f"Cooldown complete notification triggered.")
-        self.update_waypoint()
-        if self.parent == None: return
 
-        # I don't love this. Overlay would be better.
+        self.update_waypoint()
+
+        if self.parent == None or self.cooldown_popup == False: return
         title:str = f"{NAME} – {hdrs['cooldown_title']}"
         message:str = lbls['cooldown_complete']
-        Overlay().show_message("Default", lbls['cooldown_complete'], "title")
         PopupNotice(title + "\n" + message, 20000, self.parent)
 
 
     @catch_exceptions
+    def chat(self, message:str = '') -> None:
+        """ Handle commands via in game chat messages """
+        if not message.startswith("!nd "):
+            return
+
+        match message[4:]:
+            case "prev" | "previous":
+                self.goto_prev_waypoint()
+            case "next":
+                self.goto_next_waypoint()
+            case _:
+                self.ctc(Context.route.next_stop())
+
+
+    @catch_exceptions
     def prefs_frame(self, parent:tk.Frame) -> nb.Frame:
-        """
-        Return a TK Frame for adding to the EDMC settings dialog
-        """
+        """ Return a TK Frame for adding to the EDMC settings dialog """
+
+        def bind_var(data_obj, attribute, tk_var):
+            # Update dataclass whenever the UI changes
+            def update_obj(*args) -> None:
+                setattr(data_obj, attribute, tk_var.get())
+
+            tk_var.trace_add("write", update_obj)
+            return tk_var
+
         self.plugin_frame:tk.Frame = parent
         frame:nb.Frame = nb.Frame(parent)
         # Make the second column fill available space
         frame.columnconfigure(1, weight=1)
-        Overlay().prefs_display(frame)
+
+        prefsfr:nb.Frame = nb.Frame(frame)
+        prefsfr.columnconfigure(3, weight=1)
+        prefsfr.rowconfigure(60, weight=1)
+        prefsfr.grid(sticky=tk.NW)
+
+        row:int = 0; col:int = 0
+        nb.Label(prefsfr, text="Neutron Dancer Options", justify=tk.LEFT).grid(row=row, column=col, padx=10, pady=5, sticky=tk.NW)
+
+        vars:dict = {}; cbtns:list = []; row += 1; col = 0
+        # variable, label, variable type, object type
+        for k in [('cooldown_popup', 'Show Carrier Cooldown Popup', tk.BooleanVar, tk.Checkbutton)]:
+
+            vars[k[0]] = bind_var(self, k[0], k[2](value=getattr(self, k[0])))
+            match k[3]:
+                case tk.Checkbutton:
+                    nb.Checkbutton(prefsfr, text=k[1], variable=vars[k[0]]).grid(row=row, column=col, padx=10, pady=0, sticky=tk.W)
+                case tk.Entry:
+                    nb.Label(prefsfr, text=k[1]).grid(row=row, column=col, padx=5, pady=5, sticky=tk.W)
+                    col += 1
+                    tk.Entry(prefsfr, textvariable=vars[k[0]], width=8, validate='all').grid(row=row, column=col, padx=5, pady=5, sticky=tk.W)
+                case 'ColorPicker':
+                    btn:tk.Button = tk.Button(prefsfr, text=k[1], foreground=self.ovf.text_colour, background=self.ovf.background,
+                                              command=partial(colour_picker, ovrprefs, k[1], vars[k[0]]))
+                    btn.grid(row=row, column=col, padx=5, pady=5, sticky=tk.W)
+                    cbtns.append(btn)
+            col += 1
+        row += 1
+        ttk.Separator(frame).grid(row=row, columnspan=3, pady=5 * 2, sticky=tk.EW)
+
+        Context.overlay.prefs_display(frame)
         return frame
 
+
     def save_prefs(self) -> None:
-        Overlay().save_prefs()
+        config.set(f"{Context.plugin_name}_cooldown_popup", bool(self.cooldown_popup))
+        Context.overlay.save_prefs()
         return
+
+
+    def _load_prefs(self) -> None:
+        """ Read frame data from the EDMC config. """
+        res:bool|None = config.get(f"{Context.plugin_name}_cooldown_popup")
+        self.cooldown_popup = res if res != None else True

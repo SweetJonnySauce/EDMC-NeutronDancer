@@ -4,12 +4,14 @@ import requests
 from requests import Response
 from pathlib import Path
 from time import time, sleep
+from datetime import UTC, datetime
 from threading import Thread
 
 from config import config # type: ignore
 from utils.debug import Debug, catch_exceptions
+from utils.misc import hfplus
 
-from .constants import lbls, errs, HEADERS, HEADER_MAP, DATA_DIR, SPANSH_ROUTE, SPANSH_GALAXY_ROUTE, SPANSH_RESULTS
+from .constants import ovr, errs, lbls, HEADERS, HEADER_MAP, DATA_DIR, SPANSH_ROUTE, SPANSH_GALAXY_ROUTE, SPANSH_RESULTS
 from .context import Context
 from .ship import Ship
 from .route import Route
@@ -111,7 +113,7 @@ class Router():
 
 
     def jumped(self, system:str, entry:dict) -> None:
-        """ Called after a carrier jump in order to update the route, the UI etc."""
+        """ Called after a jump in order to update the route, the UI etc."""
 
         if Context.route.route == [] or Context.route.fleetcarrier == True: return
         Context.route.record_jump(entry.get('StarSystem', system), entry.get('JumpDist', 0))
@@ -123,20 +125,58 @@ class Router():
         if Context.route.update_route(0, entry.get('StarSystem', system)) > 0:
             Debug.logger.debug(f"Updating route")
             Context.ui.update_waypoint()
+            self.update_jump_overlay()
 
 
+    def update_jump_overlay(self) -> None:
+        """ Update overlay after a waypoint """
+        wp:str = Context.route.next_stop()
+        if Context.route.jumps_to_wp() != 0:
+            wp += f" ({Context.route.jumps_to_wp()} {lbls['jumps'] if Context.route.jumps_to_wp() != 1 else lbls['jump']})"
+
+        message:list = [{'size': 'large', 'text' : "Next: " + str(wp)}]
+        jumps:tuple = tuple([Context.route.total_jumps() - Context.route.jumps_remaining(), 'int', '0'])
+        tjumps:tuple = tuple([Context.route.total_jumps(), 'int'])
+        txt:str = lbls['jumps'] if Context.route.jc != None else lbls['waypoints']
+        jstr:str = f"{txt} {hfplus(jumps)}/{hfplus(tjumps)}"
+        if Context.route.total_dist() > 0:
+            jstr += f", {lbls['distance']} "
+            dist:tuple = tuple([Context.route.total_dist() - Context.route.dist_remaining(), 'float', '0', ''])
+            jstr += f"{hfplus(dist)}/{hfplus(Context.route.total_dist())} ly"
+
+        next_refuel:int|None = Context.route.next_refuel()
+        if next_refuel is not None and next_refuel == 0:
+            jstr += ", ⛽ " + lbls["refuel_now"]
+        if next_refuel is not None and next_refuel > 0:
+            jstr += ", " + lbls["refuel"].format(r=next_refuel)
+            jstr += " " + lbls["jump"] if next_refuel == 1 else lbls["jumps"]
+
+        message.append({'size': "normal", 'text': f"{jstr}"})
+        Context.overlay.display_frame('Default', message, ttl=120)
+        Context.overlay.display_frame('Galaxy Map', message, ttl=120)
+
+    def update_route(self, i:int) -> None:
+        """ Called by the UI when next or prev is clicked """
+        Context.route.update_route(i)
+        self.update_jump_overlay()
+
+    @catch_exceptions
     def carrier_event(self, entry:dict) -> None:
         """ Note carrier jumps for a cooldown notification """
-        if Context.route.route == [] or Context.route.fleetcarrier == False: return
+        #if Context.route.route == [] or Context.route.fleetcarrier == False: return
 
         match entry.get('event'):
-            case 'CarrierJumpRequest' if entry.get('SystemName', '') == Context.route.next_stop():
+            case 'CarrierJumpRequest': # if entry.get('SystemName', '') == Context.route.next_stop():
                 self.carrier_id = entry.get('CarrierID', '')
                 self.carrier_state = 'Jumping'
+                end:datetime = datetime.fromisoformat(entry.get("DepartureTime", ''))
+                Context.overlay.display_countdown('Carrier', ovr['jump'], end)
                 Debug.logger.debug(f"Carrier {self.carrier_id} jumping to {entry.get('SystemName', '')}")
 
             case 'CarrierJumpCancelled' if self.carrier_id == entry.get('CarrierID', ''):
                 self.carrier_state = 'Cooldown'
+                Context.overlay.stop_countdown('Carrier')
+                Context.overlay.display_countdown('Carrier', ovr['cooldown'], 300)
                 Context.ui.frame.after(300000, lambda: self.cooldown_complete())
 
             case 'CarrierLocation' if self.carrier_state == 'Jumping' and self.carrier_id == entry.get('CarrierID', '') and Context.ui.parent != None:
@@ -147,6 +187,8 @@ class Router():
                 Debug.logger.debug(f"Updated route")
                 self.carrier_state = 'Cooldown'
                 self.system = system
+                Context.overlay.stop_countdown('Carrier')
+                Context.overlay.display_countdown('Carrier', ovr['cooldown'], 300)
                 Context.ui.frame.after(300000, lambda: self.cooldown_complete())
                 Context.ui.update_waypoint()
 
@@ -157,7 +199,6 @@ class Router():
     def cooldown_complete(self) -> None:
         """ Show an informational messagebox indicating a carrier cooldown has completed. """
         Debug.logger.debug(f"Cooldown complete notification triggered.")
-        if Context.ui.parent == None: return
         self.carrier_state = 'Idle'
         Context.ui.cooldown_complete()
 
@@ -431,5 +472,3 @@ class Router():
         # Migrate
         if self.shiplist == [] and self.ships != {}:
             self.shiplist = [id for id in self.ships.keys()]
-
-

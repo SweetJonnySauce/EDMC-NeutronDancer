@@ -1,6 +1,6 @@
 from time import time
 from utils.debug import Debug
-from .constants import HEADER_MAP, tts
+from .constants import HEADER_MAP, tts, TRUE
 
 class Route:
     """
@@ -60,6 +60,23 @@ class Route:
         if self.offset >= len(self.route): return ''
         Debug.logger.debug(f"Next stop: {self.sc} {self.route[self.offset][self.sc]}")
         return self.route[self.offset][self.sc]
+
+
+    def next_refuel(self) -> int|None:
+        """ Returns how many jumps until the next fuel stop. Returns None if no fuel stops. """
+        if self.route == [] or self.offset >= len(self.route): return None
+
+        ind:int|None = self.colind("Refuel") or self.colind("Restock")
+        if ind == None: return None
+
+        # TODO: Not sure about this logic. It's trying to deal with a started or not started route but still...
+        start:int = 1
+        waypoint_range:list = self.route[self.offset:len(self.route)]
+        if self.offset > 0:
+            start = 0
+            waypoint_range = self.route[self.offset-1:len(self.route)]
+
+        return next((i + start for i, wp in enumerate(waypoint_range) if wp[ind] in TRUE), None)
 
 
     def jumps_to_wp(self) -> int:
@@ -129,7 +146,6 @@ class Route:
         """ Return the index of a given column, by default the system name column """
         if self.hdrs == []: return None
 
-        Debug.logger.debug(f"{self.hdrs}")
         if which == '':
             for h in ['Body Name', 'body', 'System Name', 'system', 'name']:
                 if h in self.hdrs:
