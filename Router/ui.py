@@ -127,8 +127,6 @@ class UI():
 
         Context.router.neutron_params['range'] = f"{Context.router.ship.get_range(Context.router.cargo):.2f}" if Context.router.ship else "32.0"
         Context.router.neutron_params['supercharge_multiplier'] = Context.router.ship.supercharge_multiplier if Context.router.ship else 4
-        if Context.router.cargo != 0 and Context.router.cargo != Context.router.galaxy_params.get('cargo', 0):
-            Context.router.galaxy_params['cargo'] = Context.router.cargo
 
         match which:
             case 'Route':
@@ -299,11 +297,7 @@ class UI():
         col += 1
 
         self.cargo_entry:Placeholder = Placeholder(plot_fr, lbls['cargo'], width=11, justify=tk.CENTER)
-        if params.get('cargo', 0) != 0:
-            self.set_entry(self.cargo_entry, str(params.get('cargo', 0)))
-        elif Context.router.cargo != 0:
-            self.set_entry(self.cargo_entry, str(Context.router.cargo))
-
+        self.set_entry(self.cargo_entry, str(params.get('cargo', 0)))
         self.cargo_entry.grid(row=row, column=col, padx=5, pady=5)
         Tooltip(self.cargo_entry, tts["cargo"])
 
@@ -641,7 +635,6 @@ class UI():
 
         # Galaxy plotter
         self.ship.set(ship.name)
-        self.set_entry(self.cargo_entry, str(Context.router.cargo))
 
         # Ship dropdown
         ships:list = [Context.router.ships[id].name for id in Context.router.shiplist if id in Context.router.ships]

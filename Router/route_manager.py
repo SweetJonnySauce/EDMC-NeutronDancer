@@ -176,8 +176,8 @@ class Router():
             case 'CarrierJumpCancelled' if self.carrier_id == entry.get('CarrierID', ''):
                 self.carrier_state = 'Cooldown'
                 Context.overlay.stop_countdown('Carrier')
-                Context.overlay.display_countdown('Carrier', ovr['cooldown'], 300)
-                Context.ui.frame.after(300000, lambda: self.cooldown_complete())
+                Context.overlay.display_countdown('Carrier', ovr['cooldown'], 60)
+                Context.ui.frame.after(60000, lambda: self.cooldown_complete())
 
             case 'CarrierLocation' if self.carrier_state == 'Jumping' and self.carrier_id == entry.get('CarrierID', '') and Context.ui.parent != None:
                 system:str = entry.get('StarSystem', '')

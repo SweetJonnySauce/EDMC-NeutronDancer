@@ -217,8 +217,9 @@ class Overlay():
         """
         Debug.logger.debug(f"Countdown starting {content} {end}")
         if end == None or frame not in self.ovfrs: return
+        self.stop_countdown(frame)
         if isinstance(end, int): end = datetime.now() + timedelta(seconds=end)
-        self.stoppers[frame] = Event()
+        if frame not in self.stoppers: self.stoppers[frame] = Event()
         Thread(target=self._countdown, args=(frame, content, end, self.stoppers[frame]),
                                              name=f"{Context.plugin_name}_{frame} overlay countdown worker").start()
 
