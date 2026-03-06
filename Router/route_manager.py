@@ -17,7 +17,7 @@ from .ship import Ship
 from .route import Route
 
 SAVE_VARS:dict = {'system': '', 'src': '', 'dest': '', 'last_plot': 'Neutron',
-                  'carrier_id': '', 'neutron_params': {}, 'galaxy_params': {},
+                  'carrier_id': '', 'carrier_location': '', 'neutron_params': {}, 'galaxy_params': {},
                   'ship_id': '', 'cargo': 0, 'shiplist': [], 'history': [],
                   'window_geometries' : {}}
 class Router():
@@ -61,6 +61,7 @@ class Router():
         # Carrier
         self.carrier_id:str = ''
         self.carrier_state:str = 'Idle'
+        self.carrier_location:str = ''
 
         self.window_geometries:dict = {}
 
@@ -179,13 +180,13 @@ class Router():
                 Context.ui.frame.after(60000, lambda: self.cooldown_complete())
 
             case 'CarrierLocation' if self.carrier_state == 'Jumping' and self.carrier_id == entry.get('CarrierID', ''):
-                system:str = entry.get('StarSystem', '')
-                Debug.logger.debug(f"Carrier is in {system}")
-                Context.route.update_route(0, system)
+                self.carrier_location = entry.get('StarSystem', '')
+                Debug.logger.debug(f"Carrier is in {self.carrier_location}")
+                if Context.route.fleetcarrier == True:
+                    Context.route.update_route(0, self.carrier_location)
+                    Context.ui.update_waypoint()
                 self.carrier_state = 'Cooldown'
-                self.system = system
                 Context.ui.frame.after(300000, lambda: self.cooldown_complete())
-                Context.ui.update_waypoint()
                 Context.overlay.stop_countdown('Carrier')
                 Context.overlay.display_countdown('Carrier', ovr['cooldown'], 300)
 

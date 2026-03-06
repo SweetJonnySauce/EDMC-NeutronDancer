@@ -504,7 +504,9 @@ class UI():
 
         # We check if we're there rather than if there are no jumps remaining so
         # we don't show end of the road when someone steps forward/backward.
-        if Context.router.system == Context.route.destination() and Context.route.jumps_remaining() == 0:
+        sys:str = Context.router.carrier_location if Context.route.fleetcarrier == True else Context.router.system
+
+        if sys == Context.route.destination() and Context.route.jumps_remaining() == 0:
             self.waypoint_btn.configure(text=lbls["route_complete"], image='', compound=tk.NONE)
             self._update_progbar()
             return

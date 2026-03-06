@@ -11,7 +11,6 @@ import tkinter as tk
 from tkinter import ttk, colorchooser as tkColorChooser
 import myNotebook as nb # type: ignore
 
-
 from config import config # type: ignore
 #from edmc_data import GuiFocusNoFocus, FlagsInMainShip, GuiFocusGalaxyMap # type: ignore
 import edmc_data # type: ignore
@@ -34,6 +33,8 @@ class OvFrame:
     name:str = 'Default'
     enabled:bool = True # Preference state
     visible:bool = True # Current visibility state
+    x:int = 100
+    y:int = 100
     text_colour:str = "#ffffff"
     ttl:int = 0
 
@@ -60,6 +61,10 @@ class Overlay():
         self.ovfrs:dict[str, OvFrame] = {'Default': OvFrame(), 'Galaxy Map': OvFrame(), 'Carrier': OvFrame()}
         self.stoppers:dict[str, Event] = {}
         self._load_prefs()
+        # Set defaults
+        self.ovfrs['Default'].x = 100; self.ovfrs['Default'].y = 900
+        self.ovfrs['Galaxy Map'].x = 500; self.ovfrs['Galaxy Map'].y = 200; self.ovfrs['Galaxy Map'].visible = False
+        self.ovfrs['Carrier'].x = 1000; self.ovfrs['Carrier'].y = 900
         for k, fr in self.ovfrs.items():
             fr.name = k
             self.create_frame(Context.plugin_name, fr)
