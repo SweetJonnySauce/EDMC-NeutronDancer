@@ -227,8 +227,8 @@ class Overlay():
         self.stop_countdown(frame)
         self.stoppers[frame] = Event()
         if isinstance(end, int): end = datetime.now() + timedelta(seconds=end)
-        Thread(target=self._countdown, args=(frame, content, end, self.stoppers[frame]),
-                                             name=f"{Context.plugin_name}_{frame} overlay countdown worker").start()
+        Thread(target=self._countdown, args=(frame, content, end, self.stoppers[frame]), daemon=True,
+               name=f"{Context.plugin_name}_{frame} overlay countdown worker").start()
 
 
     @catch_exceptions

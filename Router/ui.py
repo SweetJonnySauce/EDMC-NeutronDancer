@@ -851,7 +851,7 @@ class UI():
         if self.parent == None or self.cooldown_popup == False: return
         title:str = f"{NAME} – {hdrs['cooldown_title']}"
         message:str = lbls['cooldown_complete']
-        PopupNotice(title + "\n" + message, 20000, self.parent)
+        PopupNotice(title + "\n" + message, 60000, self.parent)
 
 
     @catch_exceptions

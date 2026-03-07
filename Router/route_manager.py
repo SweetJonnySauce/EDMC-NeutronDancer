@@ -4,14 +4,15 @@ import requests
 from requests import Response
 from pathlib import Path
 from time import time, sleep
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from threading import Thread
+
 
 from config import config # type: ignore
 from utils.debug import Debug, catch_exceptions
 from utils.misc import hfplus, copy_to_clipboard
 
-from .constants import ovr, errs, lbls, HEADERS, HEADER_MAP, DATA_DIR, SPANSH_ROUTE, SPANSH_GALAXY_ROUTE, SPANSH_RESULTS
+from .constants import ovr, errs, lbls, CarrierStates, HEADERS, HEADER_MAP, DATA_DIR, SPANSH_ROUTE, SPANSH_GALAXY_ROUTE, SPANSH_RESULTS
 from .context import Context
 from .ship import Ship
 from .route import Route
@@ -60,8 +61,9 @@ class Router():
 
         # Carrier
         self.carrier_id:str = ''
-        self.carrier_state:str = 'Idle'
+        self.carrier_state:CarrierStates = CarrierStates.Idle
         self.carrier_location:str = ''
+        self.carrier_destination:str = ''
 
         self.window_geometries:dict = {}
 
@@ -160,6 +162,7 @@ class Router():
         Context.route.update_route(i)
         self.update_jump_overlay()
 
+
     @catch_exceptions
     def carrier_event(self, entry:dict) -> None:
         """ Note carrier jumps for a cooldown notification """
@@ -168,33 +171,54 @@ class Router():
         match entry.get('event'):
             case 'CarrierJumpRequest': # if entry.get('SystemName', '') == Context.route.next_stop():
                 self.carrier_id = entry.get('CarrierID', '')
-                self.carrier_state = 'Jumping'
+                self.carrier_state = CarrierStates.Jumping
+                self.carrier_dest:str = entry.get('SystemName', '')
                 end:datetime = datetime.fromisoformat(entry.get("DepartureTime", ''))
-                Context.overlay.display_countdown('Carrier', ovr['jump'], end)
+
+                jstr:str = ovr['jump'].format(d=self.carrier_dest, t='{t}')
+                if entry.get('CarrierType', '') == 'SquadronCarrier':
+                    jstr = 'Squadron ' + jstr
+                Context.overlay.display_countdown('Carrier', jstr, end)
+                rem:timedelta = end - datetime.now(tz=end.tzinfo)
+                Context.ui.frame.after((rem.seconds + 2) * 1000, lambda: self.jump_complete())
                 Debug.logger.debug(f"Carrier {self.carrier_id} jumping to {entry.get('SystemName', '')}")
 
             case 'CarrierJumpCancelled' if self.carrier_id == entry.get('CarrierID', ''):
-                self.carrier_state = 'Cooldown'
+                self.carrier_state = CarrierStates.Cooldown
                 Context.overlay.stop_countdown('Carrier')
                 Context.overlay.display_countdown('Carrier', ovr['cooldown'], 60)
                 Context.ui.frame.after(60000, lambda: self.cooldown_complete())
 
-            case 'CarrierLocation' if self.carrier_state == 'Jumping' and self.carrier_id == entry.get('CarrierID', ''):
+            case 'CarrierLocation' if self.carrier_state == CarrierStates.Jumping and self.carrier_id == entry.get('CarrierID', ''):
                 self.carrier_location = entry.get('StarSystem', '')
                 Debug.logger.debug(f"Carrier is in {self.carrier_location}")
                 if Context.route.fleetcarrier == True:
                     Context.route.update_route(0, self.carrier_location)
                     Context.ui.update_waypoint()
-                self.carrier_state = 'Cooldown'
+                self.carrier_state = CarrierStates.Cooldown
                 Context.ui.frame.after(300000, lambda: self.cooldown_complete())
                 Context.overlay.stop_countdown('Carrier')
                 Context.overlay.display_countdown('Carrier', ovr['cooldown'], 300)
 
 
+    def jump_complete(self) -> None:
+        """ If we didn't get a notification of the carrier jump completion complete it """
+        if self.carrier_state != CarrierStates.Jumping: return
+
+        self.carrier_location = self.carrier_destination
+        if Context.route.fleetcarrier == True:
+            Context.route.update_route(0, self.carrier_location)
+            Context.ui.update_waypoint()
+        self.carrier_state = CarrierStates.Cooldown
+        Context.ui.frame.after(300000, lambda: self.cooldown_complete())
+        Context.overlay.stop_countdown('Carrier')
+        Context.overlay.display_countdown('Carrier', ovr['cooldown'], 300)
+
+
     def cooldown_complete(self) -> None:
         """ Show an informational messagebox indicating a carrier cooldown has completed. """
         Debug.logger.debug(f"Cooldown complete notification triggered.")
-        self.carrier_state = 'Idle'
+        self.carrier_state = CarrierStates.Idle
         Context.ui.cooldown_complete()
 
 
@@ -231,7 +255,8 @@ class Router():
 
         self.last_plot = which
 
-        Thread(target=self._plotter, args=(url, params), name="Neutron Dancer route plotting worker").start()
+        Thread(target=self._plotter, args=(url, params), daemon=True,
+               name="Neutron Dancer route plotting worker").start()
         return True
 
 

@@ -23,6 +23,7 @@ sys.path.insert(0, str(plugin_dir))
 from harness import TestHarness
 from load import journal_entry
 from Router.context import Context
+from Router.constants import CarrierStates
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -304,9 +305,9 @@ class TestEventSequences:
         """Test carrier jump with docking."""
         events:list = harness.events.get('carrier_events', [])
         harness.fire_event(events[0])
-        assert harness.router.carrier_state == 'Jumping'
+        assert harness.router.carrier_state == CarrierStates.Jumping
         harness.fire_event(events[1])
-        assert harness.router.carrier_state == 'Cooldown'
+        assert harness.router.carrier_state == CarrierStates.Cooldown
 
     def test_carrier_jump_route(self, harness:TestHarness):
         """Test carrier jump with docking."""
@@ -315,9 +316,9 @@ class TestEventSequences:
 
         events:list = harness.events.get('carrier_events', [])
         harness.fire_event(events[0])
-        assert harness.router.carrier_state == 'Jumping'
+        assert harness.router.carrier_state == CarrierStates.Jumping
         harness.fire_event(events[1])
-        assert harness.router.carrier_state == 'Cooldown'
+        assert harness.router.carrier_state == CarrierStates.Cooldown
 
 class TestPlotting:
     """Test plotting functionality (neutron/galaxy routes)."""
@@ -444,6 +445,7 @@ class TestPlotting:
         assert res == True
         time.sleep(20)
         assert harness.context.route is not None
+        print(harness.context.route)
         assert harness.context.route.source() == 'Apurui'
         assert harness.context.route.destination() == 'Bleae Thua NI-B b27-5'
         assert harness.context.route.total_jumps() == 21

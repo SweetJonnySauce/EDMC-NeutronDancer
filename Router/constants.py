@@ -1,3 +1,4 @@
+from enum import Enum, auto
 from config import config  # type: ignore
 
 # Project information
@@ -79,6 +80,11 @@ HEADER_TYPES:dict = {"System Name": ["str", ""],
 # Different ways a file might store true/false
 TRUE:list = [True, "True", "true", "YES", "Yes", "yes", 1, "1"]
 FALSE:list = [False, "False", "false", "NO", "No", "no", 0, "0"]
+
+class CarrierStates(Enum):
+    Idle = auto()
+    Jumping = auto()
+    Cooldown = auto()
 
 """
 Output strings
@@ -206,6 +212,6 @@ cnf:dict = {
 }
 
 ovr:dict = {
-    "jump": "Carrier jump in {t}",
+    "jump": "Carrier jump to {d} in {t}",
     "cooldown": "Carrier cooldown {t}"
 }
