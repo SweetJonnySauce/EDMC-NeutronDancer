@@ -96,8 +96,7 @@ hdrs:dict = {
     "jumps": "Jumps",
     "system_name": "System Name",
     "body_subtype": "Body Subtype",
-    "body_name": "Body Name",
-    "cooldown_title": "Cooldown Complete"
+    "body_name": "Body Name"
 }
 
 # Text labels
@@ -132,7 +131,7 @@ lbls:dict = {
     "use_injections": "Use FSD Injections?",
     "exclude_secondary": "Exclude Secondary Stars?",
     "refuel_every_scoopable": "Refuel Every scoopable?",
-    "cooldown_complete": "Fleet carrier cooldown has completed.",
+    "cooldown_complete": "Carrier cooldown completed",
     "plotting": "Plotting route {s} to {d}",
     "progress": "Progress",
     "speed": "Speed",

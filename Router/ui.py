@@ -517,12 +517,6 @@ class UI():
             wp += f" ({Context.route.jumps_to_wp()} {lbls['jumps'] if Context.route.jumps_to_wp() != 1 else lbls['jump']})"
         self._update_progbar()
 
-        if Context.route.fleetcarrier == True and Context.route.get_waypoint(-1) == Context.router.system:
-            if Context.router.carrier_state == 'Jumping':
-                wp = f"{lbls['carrier_jumping']}"
-            if Context.router.carrier_state == 'Cooldown':
-                wp = f"{lbls['carrier_cooldown']}"
-
         # Set an icon if appropriate
         image:tk.PhotoImage|str = ''  # Empty image
         if Context.route.refuel() == True:
@@ -849,9 +843,8 @@ class UI():
         self.update_waypoint()
 
         if self.parent == None or self.cooldown_popup == False: return
-        title:str = f"{NAME} – {hdrs['cooldown_title']}"
-        message:str = lbls['cooldown_complete']
-        PopupNotice(title + "\n" + message, 60000, self.parent)
+        message:str = NAME + "\n" + lbls['cooldown_complete']
+        PopupNotice(message, 60000, self.parent)
 
 
     @catch_exceptions
