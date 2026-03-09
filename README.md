@@ -82,7 +82,7 @@ If for some reason, your clipboard should be empty or contain other stuff that y
 
 The progress bar has a Tooltip that provides the number of jumps remaining and distance remaining if those values are known.
 
-### Show Route
+### Viewing the Route
 
 <img width="1164" height="361" alt="route_window" src="https://github.com/user-attachments/assets/37d0080d-30bc-41f1-a992-701474b605ef" />
 
@@ -142,4 +142,5 @@ This code is based on the original [Spansh router](https://github.com/CMDR-Kiel4
 Please let me know if you have any suggestions or find any bugs by submitting an [issue](https://github.com/dwomble/EDMC-NeutronDancer/issues), and if you like Neutron Dancer I don't need a coffee, I live in Seattle so I'm plenty caffeinated already, but please give it a star.
 
 Fly dangerous! o7
+
 
