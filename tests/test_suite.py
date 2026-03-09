@@ -9,6 +9,7 @@ import pytest # type: ignore
 import sys
 from pathlib import Path
 from typing import Generator, Optional
+from time import sleep
 from unittest.mock import Mock, patch, MagicMock
 import json
 import time
@@ -197,7 +198,7 @@ class TestChatCommands:
 
         events:list = harness.events.get('chat_commands', [])
         harness.fire_event(events[2])
-        assert harness.ui.parent.clipboard_get() == 'Bleae Thua RX-L d7-28'
+        assert harness.context.ui.parent.clipboard_get() == 'Bleae Thua RX-L d7-28'
 
     def test_other(self, harness:TestHarness):
         """Test some other random string has no impact"""
@@ -205,13 +206,11 @@ class TestChatCommands:
         res:bool = harness.router.import_route(filename)
         assert res == True
         from utils.misc import copy_to_clipboard
-        copy_to_clipboard(harness.ui.parent, '')
+        copy_to_clipboard(harness.context.ui.parent, '')
 
         events:list = harness.events.get('chat_commands', [])
-        harness.fire_event(events[2])
-        harness.fire_event(events[3])
-        assert harness.context.route.next_stop() == 'Bleae Thua RX-L d7-28'
-        assert harness.ui.parent.clipboard_get() == ''
+        harness.fire_event(events[3])        
+        assert harness.context.ui.parent.clipboard_get() == ''
 
 class TestShipyardSwap:
     """Test ship swapping from shipyard."""
@@ -281,7 +280,7 @@ class TestEventSequences:
 
     def test_full_route_scenario(self, harness:TestHarness):
         """Test a complete route scenario with jumps and cargo."""
-        harness.system = 'Apurui'
+        harness.router.system = 'Apurui'
 
         # Import a route
         filename:str = str(Path(__file__).parent / "config" / "full-route-scenario.csv")
@@ -296,8 +295,7 @@ class TestEventSequences:
                     assert harness.router.ship_id == str(event.get('ShipID'))
                 case 'Location' | 'FSDJump':
                     assert harness.router.system == event.get('StarSystem', '')
-                    assert harness.overlay.msgs != {}
-                    #assert harness.router.system in json.dumps(harness.overlay.msgs)
+                    assert harness.context.route.next_stop() in json.dumps(harness.overlay.msgs)
 
         # Final state check
         assert harness.context.route.jumps_remaining() == 0

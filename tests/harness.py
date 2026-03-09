@@ -17,7 +17,7 @@ import types as _types
 import tkinter as tk
 
 # Configure logging to output INFO level messages and higher to the console
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Add plugin directory to path for imports (go up one level from tests/)
 plugin_dir:Path = Path(__file__).parent.parent
@@ -26,7 +26,6 @@ sys.path.insert(0, str(plugin_dir))
 # We keep a copy of edmc_data here.
 this_dir:Path = Path(__file__).parent
 sys.path.insert(0, str(this_dir))
-
 
 # Mock EDMC's config module (only if not already mocked)
 if 'config' not in sys.modules:
@@ -117,6 +116,7 @@ from Router.ship import Ship
 from Router.csv import CSV
 from Router.constants import NAME, TITLE
 from Router.overlay import Overlay
+from load import plugin_start3, plugin_app
 
 class TestHarness:
     """ Main test harness for the Neutron Dancer plugin. """
@@ -138,6 +138,27 @@ class TestHarness:
         self.events:Dict[str, list] = self._load_events()
         self.loadouts:Dict[str, dict] = self._load_loadouts()
 
+        plugin_start3(str(self.live_dir))
+        
+        # This got stuck with annoying PhotoImage
+        try:
+            root:tk.Tk = tk.Tk()
+            parent:tk.Frame = tk.Frame(root)
+        except:
+            pass
+        root.withdraw()
+
+        plugin_app(parent)
+
+        self.router = Context.router
+        self.overlay = Context.overlay
+        self.ui = Context.ui
+        self.context = Context
+        # Event handlers registered by plugins
+        self.journal_handlers: list[Callable] = []
+        self.config = config
+
+        return
         # Initialize context
         Context.plugin_dir = self.plugin_dir
         Context.plugin_title = TITLE

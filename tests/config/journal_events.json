@@ -72,7 +72,7 @@
     "chat_commands": [
         { "event": "SendText", "Message": "!nd next"},
         { "event": "SendText", "Message": "!nd previous"},
-        { "event": "SendText", "Message": "!nd"},
+        { "event": "SendText", "Message": "!nd copy"},
         { "event": "SendText", "Message": "Hi there"}
     ]
 }
