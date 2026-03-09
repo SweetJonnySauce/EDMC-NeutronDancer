@@ -10,6 +10,9 @@
   * Added galaxy map route overlay
   * Made overlays UI context sensitive
 
+* Hotkey support
+  * Added support for Hotkeys using SweetJonnySauce's [Hotkeys](https://github.com/SweetJonnySauce/EDMCHotkeys) plugin [Issue 13](https://github.com/dwomble/EDMC-NeutronDancer/issues/13)
+
 ### Bug Fixes
 
 * Hopefully fixed cooldown popup notice problem on Linux [Issue 25](https://github.com/dwomble/EDMC-NeutronDancer/issues/25)

@@ -15,6 +15,7 @@ from Router.route_manager import Router
 from Router.csv import CSV
 from Router.ui import UI
 from Router.overlay import Overlay
+from Router.hotkeys import Hotkeys
 
 def plugin_start3(plugin_dir: str) -> str:
     Debug(plugin_dir)
@@ -51,6 +52,7 @@ def plugin_app(parent:tk.Widget) -> tk.Frame:
     Context.router = Router()
     Context.overlay = Overlay()
     Context.ui = UI(parent)
+    Context.hotkeys = Hotkeys()
 
     parent.after(5000, Context.router.update_jump_overlay)
 
@@ -74,8 +76,7 @@ def journal_entry(cmdr:str, is_beta:bool, system:str, station:str, entry:dict, s
             Context.router.swap_ship(entry.get('ShipID', ''))
         case 'Cargo':
             Context.router.cargo = entry.get('Count', 0)
-        case 'SendText':
-            Debug.logger.debug(f"SendText called")
+        case 'SendText':        
             if entry.get('Message').startswith("!nd "):
                 match entry.get('Message', '')[4:]:
                     case "prev" | "previous":

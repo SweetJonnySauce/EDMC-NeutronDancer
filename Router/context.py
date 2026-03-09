@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from .ui import UI
     from .csv import CSV
     from .overlay import Overlay
+    from .hotkeys import Hotkeys
 from .route import Route
 
 @dataclass
@@ -39,5 +40,6 @@ class Context:
     router:'Router' = None
     csv:'CSV' = None
     overlay:'Overlay' = None
+    hotkeys:'Hotkeys' = None
     ui:'UI' = None
     updater:'Updater' = None
