@@ -25,6 +25,7 @@ The original goal of this fork was support for the new 6x overcharge of the Casp
 - Tracks and reports statistics including jumps and distance per hour
 - Supports [Modern Overlay](https://github.com/SweetJonnySauce/EDMCModernOverlay) for in game display of routes and countdown timers
 - Supports chat commands (`!nd next`, `!nd previous`, `!nd copy`) for single screen operation
+- Supports [Hotkeys](https://github.com/SweetJonnySauce/EDMCHotkeys) for next waypoint, previous waypoint, and copy to clipboard operations.
 
 ## Installation
 
@@ -115,6 +116,10 @@ This enables management of Neutron Dancer without tabbing out of the game. Simpl
 - `next` – move to the next waypoint
 - `previous` (or just `prev`) – move to the previous waypoint
 - `copy` – re-insert the next waypoint into the past buffer
+
+### Hotkeys
+
+If you install the [EDMC Hotkeys](https://github.com/SweetJonnySauce/EDMCHotkeys) plugin you can define hotkeys for the chat commands listed above.
 
 ### Saving State
 

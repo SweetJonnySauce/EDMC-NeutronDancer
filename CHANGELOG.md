@@ -1,6 +1,6 @@
 # EDMC-NeutronDancer Changelog
 
-## v1.8.0 2026-03-??
+## v1.8.0 2026-03-09
 
 ### New Features
 
@@ -11,7 +11,7 @@
   * Made overlays UI context sensitive
 
 * Hotkey support
-  * Added support for Hotkeys using SweetJonnySauce's [Hotkeys](https://github.com/SweetJonnySauce/EDMCHotkeys) plugin [Issue 13](https://github.com/dwomble/EDMC-NeutronDancer/issues/13)
+  * Added support for next, previous and copy to clipboard Hotkeys using the [EDMC Hotkeys](https://github.com/SweetJonnySauce/EDMCHotkeys) plugin [Issue 13](https://github.com/dwomble/EDMC-NeutronDancer/issues/13)
 
 ### Bug Fixes
 
