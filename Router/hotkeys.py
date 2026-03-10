@@ -9,7 +9,7 @@ except ImportError:
     hotkeys = None
 
 
-class Hotkeys:        
+class Hotkeys:
     # Singleton pattern
     _instance = None
 
@@ -21,28 +21,26 @@ class Hotkeys:
     def __init__(self) -> None:
         # Only initialize if it's the first time
         if hasattr(self, '_initialized'): return
-
         if not hotkeys: return
-        
+
         for cmd in ["next", "previous", "copy"]:
             if not hotkeys.register_action(
                 hotkeys.Action(id=f"{Context.plugin_name}-{cmd}",
                             label=cmd,
                             plugin=Context.plugin_name,
-                            callback=self.callback,
+                            callback=getattr(self, cmd),
                             thread_policy="main",
-                            cardinality="single",
-                            payload={"cmd": cmd}
+                            cardinality="single"
                             )):
                 Debug.logger.debug(f"Error registering {cmd} hotkey")
         self._initialized = True
 
     @staticmethod
-    def callback(*, payload:dict|None = None, source:str = "hotkey", hotkey:str|None = None) -> None:    
-        match (payload or {}).get('cmd', ''):
-            case 'next':
-                Context.ui.goto_next_waypoint()
-            case 'previous':
-                Context.ui.goto_prev_waypoint()
-            case _:
-                copy_to_clipboard(Context.ui.parent, Context.route.next_stop())
+    def next(*, payload=None, source="hotkey", hotkey=None) -> None:
+        Context.ui.goto_next_waypoint()
+    @staticmethod
+    def previous(*, payload=None, source="hotkey", hotkey=None) -> None:
+        Context.ui.goto_prev_waypoint()
+    @staticmethod
+    def copy(*, payload=None, source="hotkey", hotkey=None) -> None:
+        copy_to_clipboard(Context.ui.parent, Context.route.next_stop())
