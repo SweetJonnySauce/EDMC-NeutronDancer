@@ -134,7 +134,7 @@ This is notoriously variable and problematic. Neutron Dancer tries to find `wl-c
 If you have problems with waypoints not being put into the clipboard you can override all of this by setting an environment variable `EDMC_CLIPBOARD_CLI` to the command you wish to use before running EDMC. e.g.
 
 ```shell
-export EDMC_CLIPBOARD_CLI="/usr/local/random/xsel --clipboard --input
+export EDMC_CLIPBOARD_CLI="/usr/local/random/xsel --clipboard --input"
 /usr/bin/python EDMarketConnector.py
 ```
 
@@ -149,5 +149,6 @@ This code is based on the original [Spansh router](https://github.com/CMDR-Kiel4
 Please let me know if you have any suggestions or find any bugs by submitting an [issue](https://github.com/dwomble/EDMC-NeutronDancer/issues), and if you like Neutron Dancer I don't need a coffee, I live in Seattle so I'm plenty caffeinated already, but please give it a star.
 
 Fly dangerous! o7
+
 
 
